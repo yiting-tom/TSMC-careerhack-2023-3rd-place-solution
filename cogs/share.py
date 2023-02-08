@@ -98,23 +98,6 @@ class ShareAddModal(ui.Modal):
 
         await interaction.response.edit_message(embed=embed, view=None)
 
-
-class ShareSelect(ui.Select):
-
-    def __init__(self, placeholder, options_dict: dict, min_values=1, max_values=1):
-
-        options = [
-            discord.SelectOption(label=label, value=value)
-            for label, value in options_dict.items()
-        ]
-        super().__init__(
-            placeholder=placeholder,
-            options=options,
-            min_values=min_values,
-            max_values=max_values
-        )
-
-
 class Share(commands.Cog, name="share", description="Share your content!"):
     """https://github.com/thrzl/discord-ext-forms
 
