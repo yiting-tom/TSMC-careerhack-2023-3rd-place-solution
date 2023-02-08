@@ -9,6 +9,7 @@ Version: 5.5.0
 import os
 
 import aiosqlite
+from typing import List
 
 DATABASE_PATH = f"{os.path.realpath(os.path.dirname(__file__))}/../database/database.db"
 
@@ -118,4 +119,98 @@ async def get_warnings(user_id: int, server_id: int) -> list:
             result_list = []
             for row in result:
                 result_list.append(row)
+            return result_list
+
+
+async def get_share_tags(server_id: int) -> list:
+    """
+    This function will get all the tags of a server.
+
+    This funcion is for share command
+
+    :param server_id: The ID of the server that should be checked.
+    :return: A list of all the tags of the server.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        rows = await db.execute("SELECT DISTINCT tag FROM shares WHERE server_id=?", (server_id,))
+        async with rows as cursor:
+            result = await cursor.fetchall()
+            result_list = []
+            for row in result:
+                result_list.append(row[0])
+            return result_list
+
+
+async def add_share(user_id: int, server_id: int, title: str, description: str, url: str, tag: str):
+    """
+    This function will add a share to the database.
+
+    :param user_id: The ID of the user that should be added into the share.
+    :param server_id: The ID of the server that should be added into the share.
+    :param title: The title of the share.
+    :param description: The description of the share.
+    :param url: The url of the share.
+    :param tag: The tag of the share.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute("INSERT INTO shares(user_id, server_id, title, description, url, tag) VALUES (?, ?, ?, ?, ?, ?)", (user_id, server_id, title, description, url, tag,))
+        await db.commit()
+
+async def check_shares(user_id: int, server_id: int) -> list:
+    """
+    This function will check if a share exists.
+
+    :param server_id: The ID of the server that should be checked.
+    :param tag: The tag of the share that should be checked.
+    :return: A list of all the shares of the server.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        rows = await db.execute("SELECT share_id, title, description, url, tag FROM shares WHERE user_id=? AND server_id=?", (user_id, server_id))
+        async with rows as cursor:
+            result = await cursor.fetchall()
+            result_list = []
+            for row in result:
+                result_list.append(
+                    {
+                        "share_id": row[0],
+                        "title": row[1],
+                        "description": row[2],
+                        "url": row[3],
+                        "tag": row[4],
+                    }
+                )
+            return result_list
+
+
+async def delete_shares_by_share_ids(user_id: int, server_id: int, share_ids: List[str]):
+    """
+    Delect share from database by list of titles
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+
+        sql_cmd = "DELETE FROM shares WHERE user_id=? AND server_id=? AND share_id IN ({})".format(
+            ','.join('?' * len(share_ids)))
+
+        await db.execute(sql_cmd, (user_id, server_id, *share_ids,))
+        await db.commit()
+
+
+async def get_shares_by_tag(server_id: int, tag: str):
+    """
+    Get shares by tag
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        rows = await db.execute("SELECT title, description, url, tag FROM shares WHERE server_id=? AND tag=?", (server_id, tag))
+        async with rows as cursor:
+            result = await cursor.fetchall()
+            result_list = []
+            for row in result:
+                result_list.append(
+                    {
+                        "title": row[0],
+                        "description": row[1],
+                        "url": row[2],
+                        "tag": row[3]
+                    }
+                )
             return result_list
