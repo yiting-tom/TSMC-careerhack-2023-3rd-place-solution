@@ -97,7 +97,7 @@ class Voting(commands.Cog, name="voting"):
                 for selected in select_box.values:
                     self.voting[voting_type][selected] += 1
                 print(self.voting)
-                await interaction.response.send_message(f"You choose : {', '.join(select_box.values)}")
+                await interaction.response.send_message(f"You choose : {', '.join(select_box.values)}", ephemeral=True)
 
             select_box.callback = deal_data
             view = View()
