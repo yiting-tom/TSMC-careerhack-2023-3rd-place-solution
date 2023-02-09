@@ -12,7 +12,8 @@ from helpers import checks, db_manager
 import discord
 from discord import ui
 from discord import app_commands
-
+from discord.ext.forms import Form, Validator, ReactionForm, ReactionMenu
+import math
 
 GUILD_ID = 1070985020841394197
 
@@ -75,6 +76,7 @@ class ShareAddModal(ui.Modal):
             title=f"✅ 成功分享到 #{tag}",
             color=0x819FF7,
         )
+
         embed.set_author(
             name=interaction.user.name,
             icon_url=interaction.user.avatar.url if interaction.user.avatar else interaction.user.default_avatar.url,
@@ -97,6 +99,7 @@ class ShareAddModal(ui.Modal):
         )
 
         await interaction.response.edit_message(embed=embed, view=None)
+
 
 class Share(commands.Cog, name="share", description="Share your content!"):
     """https://github.com/thrzl/discord-ext-forms
@@ -168,6 +171,9 @@ class Share(commands.Cog, name="share", description="Share your content!"):
 
         await context.send(view=view)
 
+        # remove users message
+        await context.message.delete()
+
     @share.command(
         name="list",
         description="List shares",
@@ -179,6 +185,7 @@ class Share(commands.Cog, name="share", description="Share your content!"):
         if context.guild is None:
             await context.send("This command can only be used in a server.")
             return
+
         exist_tags = await db_manager.get_share_tags(server_id=context.guild.id)
 
         if len(exist_tags) == 0:
@@ -198,24 +205,52 @@ class Share(commands.Cog, name="share", description="Share your content!"):
 
         async def callback(interaction: discord.Interaction):
 
+            await interaction.response.edit_message( content="以下是大家分享的內容" ,embed=None, view=None)
+
             shares = await db_manager.get_shares_by_tag(
                 server_id=context.guild.id,
                 tag=select_ui.values[0]
             )
 
-            embed = discord.Embed(
-                title=f"Shares of #{select_ui.values[0]}",
-                color=0x819FF7,
-            )
+            embed_per_page = 5
 
-            for share in shares:
-                embed.add_field(
-                    name=f"📄 {share['title']}",
-                    value=f"{share['description']}\n{share['url']}\n",
-                    inline=False
+            if len(shares) > embed_per_page:
+
+                embed_list = []
+
+                for i in range(0, len(shares), embed_per_page):
+
+                    embed = discord.Embed(
+                        title=f"({int(i/embed_per_page+1)}/{math.ceil(len(shares)/embed_per_page)}) Posts of #{select_ui.values[0]}",
+                        color=0x819FF7,
+                    )
+
+                    for share in shares[i:i+embed_per_page]:
+                        embed.add_field(
+                            name=f"📄 {share['title']}",
+                            value=f"{share['description']}\n{share['url']}\n",
+                            inline=False
+                        )
+
+                    embed_list.append(embed)
+
+                form = ReactionMenu(context, embed_list)
+                await form.start()
+            else:
+
+                embed = discord.Embed(
+                    title=f"Shares of #{select_ui.values[0]}",
+                    color=0x819FF7,
                 )
 
-            await interaction.response.edit_message(embed=embed, view=None)
+                for share in shares:
+                    embed.add_field(
+                        name=f"📄 {share['title']}",
+                        value=f"{share['description']}\n{share['url']}\n",
+                        inline=False
+                    )
+
+                await context.send(embed=embed)
 
         select_ui.callback = callback
         view.add_item(select_ui)
@@ -236,7 +271,7 @@ class Share(commands.Cog, name="share", description="Share your content!"):
 
         # shares is a list of dict, each dict has 4 keys: title, description, url, tag
         shares = await db_manager.check_shares(user_id=context.author.id,
-                                              server_id=context.guild.id)
+                                               server_id=context.guild.id)
 
         if len(shares) == 0:
             await context.send("你沒有分享過任何內容。")
@@ -271,7 +306,7 @@ class Share(commands.Cog, name="share", description="Share your content!"):
 
         # shares is a list of dict, each dict has 4 keys: title, description, url, tag
         shares = await db_manager.check_shares(user_id=context.author.id,
-                                              server_id=context.guild.id)
+                                               server_id=context.guild.id)
 
         if len(shares) == 0:
             await context.send("你沒有分享過任何內容。")
