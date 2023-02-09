@@ -17,6 +17,59 @@ import asyncio
 import datetime
 
 
+async def to_int(ctx: commands.Context, message: discord.Message):
+    """ Convert a message to an integer."""
+    try:
+        return int(message.content)
+    except Exception as e:
+        return False
+
+
+async def to_sec(time_str: str):
+    """ Convert a string to seconds.
+
+    Examples:
+        1s -> 1 second
+        1m -> 60 seconds
+        1h -> 3600 seconds
+    """
+    time_str = time_str.lower()
+    times = time_str.split(" ")
+
+    for t in times:
+        if t[-1] not in ["s", "m", "h"]:
+            raise Exception(f"Invalid time format {time_str}!")
+
+    seconds = 0
+    for t in times:
+        if t[-1] == "s":
+            seconds += int(t[:-1])
+        elif t[-1] == "m":
+            seconds += int(t[:-1]) * 60
+        elif t[-1] == "h":
+            seconds += int(t[:-1]) * 3600
+
+    return seconds
+
+
+async def check_duration(ctx: commands.Context, message: discord.Message):
+    """ Check if the duration is valid."""
+    try:
+        sec = await to_sec(message.content)
+
+        if sec < 1:
+            return False
+        return sec
+    except Exception as e:
+        return False
+
+
+async def to_str(ctx: commands.Context, message: discord.Message):
+    """ Convert a message to a string."""
+    try:
+        return str(message.content)
+    except Exception as e:
+        return False
 # Here we name the cog and create a new class for the cog.
 
 
@@ -28,7 +81,7 @@ class Draw(commands.Cog, name="draw"):
 
     @commands.hybrid_group(
         name="draw",
-        description="test draw...",
+        description="抽獎時間",
     )
     # This will only allow non-blacklisted members to execute the command
     @checks.not_blacklisted()
@@ -40,14 +93,17 @@ class Draw(commands.Cog, name="draw"):
         """
         if context.invoked_subcommand is None:
             embed = discord.Embed(
-                description="Please specify a subcommand.",
+                description="Please specify a subcommand.\n \
+                    ** Subcommands **\n \
+                    `add` 新增一個抽獎，點選表情來參加\n \
+                    `all` 對群組內的所有人抽獎\n",
                 color=0xE02B2B
             )
             await context.send(embed=embed)
 
     @draw.command(
         name="add",
-        description="test draw add...",
+        description="新增一個抽獎，點選表情來參加",
     )
     @checks.not_blacklisted()
     async def draw_add(self, context: Context):
@@ -57,63 +113,13 @@ class Draw(commands.Cog, name="draw"):
         :param context: The application command context.
         """
 
-        async def to_int(ctx: commands.Context, message: discord.Message):
-            """ Convert a message to an integer."""
-            try:
-                return int(message.content)
-            except Exception as e:
-                return False
-
-        async def to_sec(time_str: str):
-            """ Convert a string to seconds.
-
-            Examples:
-                1s -> 1 second
-                1m -> 60 seconds
-                1h -> 3600 seconds
-            """
-            time_str = time_str.lower()
-            times = time_str.split(" ")
-
-            for t in times:
-                if t[-1] not in ["s", "m", "h"]:
-                    raise Exception(f"Invalid time format {time_str}!")
-
-            seconds = 0
-            for t in times:
-                if t[-1] == "s":
-                    seconds += int(t[:-1])
-                elif t[-1] == "m":
-                    seconds += int(t[:-1]) * 60
-                elif t[-1] == "h":
-                    seconds += int(t[:-1]) * 3600
-
-            return seconds
-
-        async def check_duration(ctx: commands.Context, message: discord.Message):
-            """ Check if the duration is valid."""
-            try:
-                sec = await to_sec(message.content)
-
-                if sec < 1:
-                    return False
-                return sec
-            except Exception as e:
-                return False
-
-        async def to_str(ctx: commands.Context, message: discord.Message):
-            """ Convert a message to a string."""
-            try:
-                return str(message.content)
-            except Exception as e:
-                return False
-
         form = Form(context, '⭐ 抽獎 ⭐', cleanup=False)
         form.edit_and_delete(False)
-
+        form.set_retry_message('格式錯誤請重新輸入')
         form.add_question('你想要在哪個頻道開始抽獎?', 'channel', Validator('channel'))
         form.add_question('請輸入獎項', 'prize', to_str)
-        form.add_question('請輸入抽獎時間  e.g. 1h 30m 5s', 'time', check_duration)
+        form.add_question('請輸入抽獎時間\ne.g. 1h 30m 5s\n1m 30s',
+                          'time', check_duration)
         form.add_question('請問要抽出幾個獎項?', 'number', to_int)
 
         form.set_timeout(30)
@@ -123,7 +129,7 @@ class Draw(commands.Cog, name="draw"):
 
         # draw embed
         embed = discord.Embed(
-            title="點選 🎉 來參與抽獎",
+            title="請點選 🎉 來參與抽獎",
             color=0xEAF506
         )
 
@@ -205,8 +211,28 @@ class Draw(commands.Cog, name="draw"):
         rmenu = ReactionMenu(ctx, embed_list)
         await rmenu.start()
 
+    @draw.command(
+        name="all",
+        description="對群組內的所有人抽獎",
+    )
+    @checks.not_blacklisted()
+    async def draw_all(self, context: Context):
+        """ Get all members and start draw """
+
+        form = Form(context, '⭐ 抽獎 ⭐', cleanup=False)
+        form.add_question('請輸入獎項', 'prize', to_str)
+        form.add_question('請問要抽出幾個獎項?', 'number', to_int)
+
+        result = await form.start()
+
+        guild = context.guild
+        members = [m for m in guild.members if m.bot == False]
+
+        winners = random.sample(members, result.number)
+
+        await context.channel.send(f"恭喜 {', '.join([user.mention for user in winners])} 獲得 {result.prize}")
+
+
 # And then we finally add the cog to the bot so that it can load, unload, reload and use it's content.
-
-
 async def setup(bot):
     await bot.add_cog(Draw(bot))
