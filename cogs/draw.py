@@ -154,12 +154,14 @@ class Draw(commands.Cog, name="draw"):
             users.pop(users.index(self.bot.user))
 
         if len(users) < result.number:
-            await result.channel.send("參與人數不足，抽獎結束")
+            await result.channel.send(f"參與人數小於 {result.number}，抽獎結束")
             return
         else:
             winners = random.sample(users, result.number)
 
-            await result.channel.send(f"恭喜 {', '.join([user.mention for user in winners])} 獲得 {result.prize}")
+            await result.channel.send(f"參與人數 {len(users)}\n恭喜 {', '.join([user.mention for user in winners])} 獲得 {result.prize}")
+
+        await msg.clear_reactions()
 
     @draw.command(
         name="reset",
