@@ -116,10 +116,17 @@ class Draw(commands.Cog, name="draw"):
         form = Form(context, '⭐ 抽獎 ⭐', cleanup=False)
         form.edit_and_delete(False)
         form.set_retry_message('格式錯誤請重新輸入')
-        form.add_question('你想要在哪個頻道開始抽獎?', 'channel', Validator('channel'))
+
+        form.add_question('你想要在哪個頻道開始抽獎?', 'channel',
+                          qtype=Validator('channel'))
         form.add_question('請輸入獎項', 'prize', to_str)
-        form.add_question('請輸入抽獎時間\ne.g. 1h 30m 5s\n1m 30s',
-                          'time', check_duration)
+        form.add_question('請輸入抽獎時間\n \
+                            1s -> 1 second,\n \
+                            1m -> 1 minute,\n \
+                            1h -> 1 hour\n \
+                            e.g. 1m 30s',
+                          key='time',
+                          qtype=check_duration)
         form.add_question('請問要抽出幾個獎項?', 'number', to_int)
 
         form.set_timeout(30)
