@@ -122,186 +122,81 @@ async def get_warnings(user_id: int, server_id: int) -> list:
             return result_list
 
 
-async def get_share_tags(server_id: int) -> list:
+async def add_vote(server_id: int, user_id: int, vote_name: str, remind_at: str) -> list:
     """
-    This function will get all the tags of a server.
+    This function will add a voting event to the database.
 
-    This funcion is for share command
-
-    :param server_id: The ID of the server that should be checked.
-    :return: A list of all the tags of the server.
-    """
-    async with aiosqlite.connect(DATABASE_PATH) as db:
-        rows = await db.execute("SELECT DISTINCT tag FROM shares WHERE server_id=?", (server_id,))
-        async with rows as cursor:
-            result = await cursor.fetchall()
-            result_list = []
-            for row in result:
-                result_list.append(row[0])
-            return result_list
-
-
-async def add_share(user_id: int, server_id: int, title: str, description: str, url: str, tag: str):
-    """
-    This function will add a share to the database.
-
-    :param user_id: The ID of the user that should be added into the share.
-    :param server_id: The ID of the server that should be added into the share.
-    :param title: The title of the share.
-    :param description: The description of the share.
-    :param url: The url of the share.
-    :param tag: The tag of the share.
+    :param server_id: The ID of the server where the vote from.
+    :param user_id: The ID of the member should be notified.
+    :param vote_name: The name of the voting event.
+    :param remind_at: The time to remind the member.
     """
     async with aiosqlite.connect(DATABASE_PATH) as db:
-        await db.execute("INSERT INTO shares(user_id, server_id, title, description, url, tag) VALUES (?, ?, ?, ?, ?, ?)", (user_id, server_id, title, description, url, tag,))
+        await db.execute("INSERT INTO vote(server_id, user_id, vote_name, remind_at) VALUES (?, ?, ?, ?)", (server_id, user_id.id, vote_name, str(remind_at)))
         await db.commit()
-
-async def check_shares(user_id: int, server_id: int) -> list:
-    """
-    This function will check if a share exists.
-
-    :param server_id: The ID of the server that should be checked.
-    :param tag: The tag of the share that should be checked.
-    :return: A list of all the shares of the server.
-    """
-    async with aiosqlite.connect(DATABASE_PATH) as db:
-        rows = await db.execute("SELECT share_id, title, description, url, tag FROM shares WHERE user_id=? AND server_id=?", (user_id, server_id))
+        rows = await db.execute("SELECT user_id FROM vote WHERE vote_name=?", (vote_name,))
         async with rows as cursor:
             result = await cursor.fetchall()
-            result_list = []
-            for row in result:
-                result_list.append(
-                    {
-                        "share_id": row[0],
-                        "title": row[1],
-                        "description": row[2],
-                        "url": row[3],
-                        "tag": row[4],
-                    }
-                )
-            return result_list
+            return [x for x in result] or []
 
-
-async def delete_shares_by_share_ids(user_id: int, server_id: int, share_ids: List[str]):
+async def delete_expire_event(remind_at: str) -> list:
     """
-    Delect share from database by list of titles
-    """
-    async with aiosqlite.connect(DATABASE_PATH) as db:
-
-        sql_cmd = "DELETE FROM shares WHERE user_id=? AND server_id=? AND share_id IN ({})".format(
-            ','.join('?' * len(share_ids)))
-
-        await db.execute(sql_cmd, (user_id, server_id, *share_ids,))
-        await db.commit()
-
-
-async def get_shares_by_tag(server_id: int, tag: str):
-    """
-    Get shares by tag
-    """
-    async with aiosqlite.connect(DATABASE_PATH) as db:
-        rows = await db.execute("SELECT title, description, url, tag FROM shares WHERE server_id=? AND tag=?", (server_id, tag))
-        async with rows as cursor:
-            result = await cursor.fetchall()
-            result_list = []
-            for row in result:
-                result_list.append(
-                    {
-                        "title": row[0],
-                        "description": row[1],
-                        "url": row[2],
-                        "tag": row[3]
-                    }
-                )
-            return result_list
-
-
-async def in_day_off_list(user_id: int, server_id: int, date: str) -> bool:
-    """
-    This function will check if a user is blacklisted.
+    This function will get all the warnings of a user.
 
     :param user_id: The ID of the user that should be checked.
-    :return: True if the user is blacklisted, False if not.
-    """
-    async with aiosqlite.connect(DATABASE_PATH) as db:
-        async with db.execute("SELECT * FROM dayoff WHERE user_id=? AND server_id=? AND time=? ", (user_id, server_id, date, )) as cursor:
-            result = await cursor.fetchone()
-            return result is not None
-
-
-async def get_dayoff_users() -> list:
-    """
-    This function will return the list of all day off users.
-
-    :param user_id: The ID of the user that should be checked.
-    :return: True if the user is blacklisted, False if not.
-    """
-    async with aiosqlite.connect(DATABASE_PATH) as db:
-        async with db.execute("SELECT user_id, strftime('%Y-%m-%d', time) FROM dayoff ORDER BY time") as cursor:
-            result = await cursor.fetchall()
-            return result
-
-
-async def get_today_dayoff_users(server_id: int, date: str) -> list:
-    """
-    This function will return the list of all day off users.
-
-    :param user_id: The ID of the user that should be checked.
-    :return: True if the user is blacklisted, False if not.
-    """
-    async with aiosqlite.connect(DATABASE_PATH) as db:
-        async with db.execute("SELECT * FROM dayoff WHERE server_id=? AND time=? ", (server_id, date, )) as cursor:
-            result = await cursor.fetchall()
-            return result
-
-
-async def add_user_to_dayoff(user_id: int, server_id: int, date: str, description: str) -> int:
-    """
-    This function will add a user based on its ID in the day-off list.
-
-    :param user_id: The ID of the user that should be added into the blacklist.
-    """
-    async with aiosqlite.connect(DATABASE_PATH) as db:
-        await db.execute("INSERT INTO dayoff(user_id, server_id, time, description) VALUES (?, ?, ?, ?)", (user_id, server_id, date, description ))
-        await db.commit()
-        rows = await db.execute("SELECT COUNT(*) FROM dayoff")
-        async with rows as cursor:
-            result = await cursor.fetchone()
-            return result[0] if result is not None else 0
-
-
-async def remove_user_from_dayoff(user_id: int, server_id: int, date: str) -> int:
-    """
-    This function will remove a user based on its ID from the blacklist.
-
-    :param user_id: The ID of the user that should be removed from the blacklist.
-    """
-    async with aiosqlite.connect(DATABASE_PATH) as db:
-        await db.execute("DELETE FROM dayoff WHERE user_id=? AND server_id=? AND time=?", (user_id, server_id, date, ))
-        await db.commit()
-        rows = await db.execute("SELECT COUNT(*) FROM dayoff")
-        async with rows as cursor:
-            result = await cursor.fetchone()
-            return result[0] if result is not None else 0
-
-
-async def check_dayoff(user_id: int, server_id: int) -> list:
-    """
-    This function will check if the days-off exists.
     :param server_id: The ID of the server that should be checked.
-    :param tag: The tag of the share that should be checked.
-    :return: A list of all the shares of the server.
+    :return: A list of all the warnings of the user.
     """
     async with aiosqlite.connect(DATABASE_PATH) as db:
-        rows = await db.execute("SELECT time, created_at FROM dayoff WHERE user_id=? AND server_id=?", (user_id, server_id))
+        await db.execute("DELETE FROM vote WHERE remind_at=?", (remind_at,))
+        await db.commit()
+        rows = await db.execute("SELECT user_id FROM vote WHERE remind_at=?", (remind_at,))
         async with rows as cursor:
             result = await cursor.fetchall()
-            result_list = []
-            for row in result:
-                result_list.append(
-                    {
-                        "time": row[0],
-                        "created_at": row[1],
-                    }
-                )
-            return result_list
+            print(len(result))
+            return [x for x in result] or []
+
+async def update_remind_time(server_id: int, vote_name: int, remind_at: str) -> list:
+    """
+    This function will get all the warnings of a user.
+
+    :param user_id: The ID of the user that should be checked.
+    :param server_id: The ID of the server that should be checked.
+    :return: A list of all the warnings of the user.
+    """
+    print(remind_at)
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute("UPDATE vote SET remind_at=? WHERE vote_name=? AND server_id=?", (remind_at, vote_name, server_id,))
+        await db.commit()
+        rows = await db.execute("SELECT user_id FROM vote WHERE vote_name=?", (vote_name,))
+        async with rows as cursor:
+            result = await cursor.fetchall()
+            return [x for x in result] or []
+
+async def get_remind_user(remind_at: str) -> list:
+    """
+    This function will get all the warnings of a user.
+
+    :param user_id: The ID of the user that should be checked.
+    :param server_id: The ID of the server that should be checked.
+    :return: A list of all the warnings of the user.
+    """
+    print(remind_at)
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        rows = await db.execute("SELECT user_id FROM vote WHERE remind_at=?", (remind_at,))
+        async with rows as cursor:
+            result = await cursor.fetchall()
+            return [int(x[0]) for x in result] or []
+
+async def voting_record(vote_type: str, first_place: str, second_place: str) -> list:
+    """
+    This function will get all the warnings of a user.
+
+    :param user_id: The ID of the user that should be checked.
+    :param server_id: The ID of the server that should be checked.
+    :return: A list of all the warnings of the user.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute("INSERT INTO vote_record(vote_type, first_place, second_place) VALUES (?, ?, ?)", (vote_type, first_place, second_place))
+        await db.commit()
+        print(f'vote : {vote_type} first_place : {first_place} second_place : {second_place}')
