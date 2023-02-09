@@ -1,0 +1,32 @@
+version: '3'
+
+services:
+  database:
+    container_name: database
+    image: postgis/postgis:13-master
+    volumes:
+      - ./data/database:/var/lib/postgresql/data
+    networks:
+      - directus
+    env_file: .env
+
+  cache:
+    container_name: cache
+    image: redis:6
+    networks:
+      - directus
+
+  directus:
+    container_name: directus
+    image: directus/directus:latest
+    ports:
+      - 8055:8055
+    networks:
+      - directus
+    depends_on:
+      - cache
+      - database
+    env_file: .env
+
+networks:
+  directus:
