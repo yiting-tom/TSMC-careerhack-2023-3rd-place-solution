@@ -119,3 +119,83 @@ async def get_warnings(user_id: int, server_id: int) -> list:
             for row in result:
                 result_list.append(row)
             return result_list
+
+
+async def add_vote(server_id: int, user_id: int, vote_name: str, remind_at: str) -> list:
+    """
+    This function will add a voting event to the database.
+
+    :param server_id: The ID of the server where the vote from.
+    :param user_id: The ID of the member should be notified.
+    :param vote_name: The name of the voting event.
+    :param remind_at: The time to remind the member.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute("INSERT INTO vote(server_id, user_id, vote_name, remind_at) VALUES (?, ?, ?, ?)", (server_id, user_id.id, vote_name, str(remind_at)))
+        await db.commit()
+        rows = await db.execute("SELECT user_id FROM vote WHERE vote_name=?", (vote_name,))
+        async with rows as cursor:
+            result = await cursor.fetchall()
+            return [x for x in result] or []
+
+async def delete_expire_event(remind_at: str) -> list:
+    """
+    This function will get all the warnings of a user.
+
+    :param user_id: The ID of the user that should be checked.
+    :param server_id: The ID of the server that should be checked.
+    :return: A list of all the warnings of the user.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute("DELETE FROM vote WHERE remind_at=?", (remind_at,))
+        await db.commit()
+        rows = await db.execute("SELECT user_id FROM vote WHERE remind_at=?", (remind_at,))
+        async with rows as cursor:
+            result = await cursor.fetchall()
+            print(len(result))
+            return [x for x in result] or []
+
+async def update_remind_time(server_id: int, vote_name: int, remind_at: str) -> list:
+    """
+    This function will get all the warnings of a user.
+
+    :param user_id: The ID of the user that should be checked.
+    :param server_id: The ID of the server that should be checked.
+    :return: A list of all the warnings of the user.
+    """
+    print(remind_at)
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute("UPDATE vote SET remind_at=? WHERE vote_name=? AND server_id=?", (remind_at, vote_name, server_id,))
+        await db.commit()
+        rows = await db.execute("SELECT user_id FROM vote WHERE vote_name=?", (vote_name,))
+        async with rows as cursor:
+            result = await cursor.fetchall()
+            return [x for x in result] or []
+
+async def get_remind_user(remind_at: str) -> list:
+    """
+    This function will get all the warnings of a user.
+
+    :param user_id: The ID of the user that should be checked.
+    :param server_id: The ID of the server that should be checked.
+    :return: A list of all the warnings of the user.
+    """
+    print(remind_at)
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        rows = await db.execute("SELECT user_id FROM vote WHERE remind_at=?", (remind_at,))
+        async with rows as cursor:
+            result = await cursor.fetchall()
+            return [int(x[0]) for x in result] or []
+
+async def voting_record(vote_type: str, first_place: str, second_place: str) -> list:
+    """
+    This function will get all the warnings of a user.
+
+    :param user_id: The ID of the user that should be checked.
+    :param server_id: The ID of the server that should be checked.
+    :return: A list of all the warnings of the user.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute("INSERT INTO vote_record(vote_type, first_place, second_place) VALUES (?, ?, ?)", (vote_type, first_place, second_place))
+        await db.commit()
+        print(f'vote : {vote_type} first_place : {first_place} second_place : {second_place}')
