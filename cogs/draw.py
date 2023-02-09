@@ -66,7 +66,7 @@ class Draw(commands.Cog, name="draw"):
 
         async def to_sec(time_str: str):
             """ Convert a string to seconds.
-            
+
             Examples:
                 1s -> 1 second
                 1m -> 60 seconds
@@ -120,7 +120,7 @@ class Draw(commands.Cog, name="draw"):
         await form.set_color("#7289DA")
 
         result = await form.start()
-        
+
         # draw embed
         embed = discord.Embed(
             title="點選 🎉 來參與抽獎",
@@ -150,7 +150,8 @@ class Draw(commands.Cog, name="draw"):
         reaction = msg.reactions[0]
         users = [user async for user in reaction.users()]
 
-        users.pop(users.index(self.bot.user))
+        if self.bot.user in users:
+            users.pop(users.index(self.bot.user))
 
         if len(users) < result.number:
             await result.channel.send("參與人數不足，抽獎結束")
