@@ -141,7 +141,7 @@ class Draw(commands.Cog, name="draw"):
         await context.channel.send(
             content=f"抽獎已開始，請到 {result.channel.mention} 參與抽獎！")
 
-        msg = await result.channel.send(embed=embed)
+        msg = await result.channel.send(embed=embed, content="@everyone 抽獎開始!")
         await msg.add_reaction("🎉")
         await asyncio.sleep(result.time)
 
