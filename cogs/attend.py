@@ -13,7 +13,7 @@ from discord.ext import tasks, commands
 from discord.ext.commands import Context
 from discord import ui
 
-from adapters.dayoff import get_user_in_date, add_one_dayoff, get_dayoff_after_today, get_dayoff_by_user_and_server, delete_dayoff, get_user_by_server_and_date
+from adapters.dayoff import get_all_dayoffs, get_user_in_date, add_one_dayoff, get_dayoff_after_today, get_dayoff_by_user_and_server, delete_dayoff, get_user_by_server_and_date
 from helpers import checks
 
 from models.dayoff import DayoffToAdd
@@ -70,7 +70,7 @@ class DayoffAddModal(ui.Modal):
             return
 
         # if await db_manager.in_day_off_list(user_id, server_id, date):
-        if get_user_in_date(str(user_id), str(server_id), date.isoformat()):
+        if get_user_in_date(str(user_id), str(server_id), date):
             embed = discord.Embed(
                 description=f"**{interaction.user.name}** 已經在 **{date}** 提出請假申請",
                 color=0xE02B2B
@@ -91,9 +91,9 @@ class DayoffAddModal(ui.Modal):
         #     description = description
         # )
         add_one_dayoff(DayoffToAdd(
-            user_id=user_id,
-            server_id=server_id,
-            date=date,
+            user_id=str(user_id),
+            server_id=str(server_id),
+            time=date,
             description=description
         ))
 
@@ -129,7 +129,7 @@ class Attend(commands.Cog, name="attend"):
         """
         if context.invoked_subcommand is None:
             embed = discord.Embed(
-                description="You need to specify a subcommand.\n\n**Subcommands:**\n`show` - Show the days-off\n`add` - Take a day off.\n`cancel` - Cancel the day off.",
+                description="You need to specify a subcommand.\n\n**Subcommands:**\n`show` - Show the days-off\n`add` - Take a day off.\n`cancel` - Cancel the day off.\n`today` - Show the attendance today.",
                 color=0xE02B2B
             )
             await context.send(embed=embed)
@@ -163,6 +163,7 @@ class Attend(commands.Cog, name="attend"):
         )
         users = []
         for bluser in dayoff_users:
+            print(bluser)
             user = self.bot.get_user(int(bluser[0])) or await self.bot.fetch_user(int(bluser[0]))
             users.append(
                 f"• {user.mention} ({user}) - Day off in *{bluser[1]}*")
@@ -210,13 +211,13 @@ class Attend(commands.Cog, name="attend"):
         #     server_id=context.guild.id,
         # )
         dayoffs = get_dayoff_by_user_and_server(
-            user_id=context.author.id,
-            server_id=context.guild.id,
+            user_id=str(context.author.id),
+            server_id=str(context.guild.id),
         )
 
         if len(dayoffs) == 0:
             embed = discord.Embed(
-                description="目前沒有人請假",
+                description="您目前沒有提出請假申請",
                 color=0xE02B2B
             )
             await context.send(embed=embed)
@@ -228,8 +229,8 @@ class Attend(commands.Cog, name="attend"):
 
         options.extend([
             discord.SelectOption(
-                label=dayoff["time"],
-                value=dayoff["time"]
+                label=dayoff,
+                value=dayoff
             )
             for dayoff in dayoffs
         ])
