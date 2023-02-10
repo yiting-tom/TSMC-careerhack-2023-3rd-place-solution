@@ -1,15 +1,15 @@
-#%%
+# %%
 from typing import List, Optional
 import requests
-
 from adapters.base import Querier, Creator, Deleter, API_URL
 from adapters.user import get_users_by_id, add_one_user
 from models.todo import Todo, TodoToAdd, TodoToDelete
-from models.user import User, UserToAdd, UserToDelete, UserToUpdate
+from models.user import UserToAdd, UserToUpdate
+import adapters.user as user_adapter
 from utils import dict_to_objects
 
 
-def add_todo(user_id:str, subject:str, description:Optional[str]):
+def add_todo(user_id: str, subject: str, description: Optional[str]):
     """ Add a todo to the database."""
 
     user_id = str(user_id)
@@ -28,7 +28,7 @@ def add_one_todo(todo: TodoToAdd):
     """ Add a todo to the database."""
 
     if len(get_users_by_id(todo.user["user_id"])) == 0:
-        user_to_add =  UserToAdd(
+        user_to_add = UserToAdd(
             user_id=todo.user["user_id"],
             email="",
             todo_time="8:00"
@@ -39,7 +39,6 @@ def add_one_todo(todo: TodoToAdd):
     create_one_todo = Creator("todo")
     return create_one_todo(todo)
 
-# %%
 def delete_one_todo(todo: TodoToDelete):
     """ Delete a todo from the database."""
 
@@ -54,10 +53,11 @@ def delete_todo_by_ids(todo_ids: List[int]):
         delete_one_todo = Deleter("todo")
         delete_one_todo(todo_id)
 
+
 def get_todos(user_id: str) -> List[Todo]:
     """ Get user's all todos from the database."""
 
-    user_id = str(user_id) 
+    user_id = str(user_id)
 
     api = f"{API_URL}/items/todo?filter[user][_eq]={user_id}"
 
@@ -65,22 +65,16 @@ def get_todos(user_id: str) -> List[Todo]:
 
     return todos
 
-# %%
 
-# add_todo(
-#     user_id="15551",
-#     subject="Test",
-#     description="Test",
-# )
+def set_remind_time(user_id: str, remind_time: str):
+    """ Set user's remind time."""
 
+    user_id = str(user_id)
+    remind_time = str(remind_time)
 
-# %%
+    user_to_update = UserToUpdate(
+        user_id=user_id,
+        todo_time=remind_time
+    )
 
-
-# t = TodoToDelete(
-#     todo_id=2,
-# )
-
-# resp = delete_one_todo(t)
-# # %%
-# resp.text
+    user_adapter.update_one_user(user_to_update)

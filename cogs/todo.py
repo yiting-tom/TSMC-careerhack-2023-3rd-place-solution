@@ -17,6 +17,7 @@ from discord.ext.forms import Form, Validator, ReactionForm, ReactionMenu
 import adapters.todo as todo_adapter
 from discord import ui
 import random
+from datetime import datetime
 
 
 class ButtonCheck(discord.ui.View):
@@ -81,6 +82,8 @@ def create_embed_by_todo_list(todo_list, title: str = "To-do list"):
             inline=False
         )
 
+    embed.set_footer(text=f"{random.choice(golden_words)}")
+
     return embed
 
 
@@ -92,41 +95,15 @@ async def to_int(ctx: commands.Context, message: discord.Message):
         return False
 
 
-async def to_sec(time_str: str):
-    """ Convert a string to seconds.
+async def check_time_format(ctx: commands.Context, message: discord.Message):
 
-    Examples:
-        1s -> 1 second
-        1m -> 60 seconds
-        1h -> 3600 seconds
-    """
-    time_str = time_str.lower()
-    times = time_str.split(" ")
-
-    for t in times:
-        if t[-1] not in ["s", "m", "h"]:
-            raise Exception(f"Invalid time format {time_str}!")
-
-    seconds = 0
-    for t in times:
-        if t[-1] == "s":
-            seconds += int(t[:-1])
-        elif t[-1] == "m":
-            seconds += int(t[:-1]) * 60
-        elif t[-1] == "h":
-            seconds += int(t[:-1]) * 3600
-
-    return seconds
-
-
-async def check_duration(ctx: commands.Context, message: discord.Message):
-    """ Check if the duration is valid."""
     try:
-        sec = await to_sec(message.content)
+        time = datetime.strptime(message.content, "%H:%M")
 
-        if sec < 1:
+        if time.hour > 23 or time.minute > 59:
             return False
-        return sec
+
+        return time
     except Exception as e:
         return False
 
@@ -149,7 +126,7 @@ class Todo(commands.Cog, name="todo"):
 
     @commands.hybrid_group(
         name="todo",
-        description="新增每日提醒",
+        description="有每日提醒功能的 To-Do List",
     )
     # This will only allow non-blacklisted members to execute the command
     @checks.not_blacklisted()
@@ -163,11 +140,10 @@ class Todo(commands.Cog, name="todo"):
             embed = discord.Embed(
                 description="Please specify a subcommand.\n \
                     ** Subcommands **\n \
-                    `add` 新增事項到每日提醒\n \
-                    `list` 檢視目前有哪些每日任務\n \
-                    `delete` 刪除每日任務的事項\n \
-                    `clear` 清空每日任務所有事項\n \
-                    `set` 設定每日提醒的時間\n \
+                    `add` 新增事項\n\n \
+                    `list` 檢視目前有哪些事項\n\n \
+                    `complete` 完成事項\n\n \
+                    `set` 設定每日提醒的時間\n\n \
                     ",
                 color=0xE02B2B
             )
@@ -273,8 +249,35 @@ class Todo(commands.Cog, name="todo"):
 
         await context.send(view=view)
 
+    @todo.command(
+        name="set",
+        description="設定每日提醒的時間",
+    )
+    @checks.not_blacklisted()
+    async def todo_set(self, context: Context):
+
+        form = Form(context, '設定每日提醒的時間', cleanup=False)
+        form.add_question("請輸入每日提醒的時間\n例如 8:20", "time", check_time_format)
+
+        result = await form.start()
+
+        todo_adapter.set_remind_time(
+            user_id=context.author.id,
+            remind_time=result.time,
+        )
+
+        embed = discord.Embed(
+            title="成功設定每日提醒的時間 ✅",
+            color=0xE02B2B
+        )
+
+        embed.add_field(name="每日提醒的時間", value=result.time, inline=False)
+
+        await context.send(embed=embed)
+
+    
+
+
 # And then we finally add the cog to the bot so that it can load, unload, reload and use it's content.
-
-
 async def setup(bot):
     await bot.add_cog(Todo(bot))
