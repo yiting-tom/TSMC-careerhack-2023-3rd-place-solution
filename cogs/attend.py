@@ -129,20 +129,27 @@ class Attend(commands.Cog, name="attend"):
         """
         if context.invoked_subcommand is None:
             embed = discord.Embed(
-                description="You need to specify a subcommand.\n\n**Subcommands:**\n`show` - Show the days-off\n`add` - Take a day off.\n`cancel` - Cancel the day off.\n`today` - Show the attendance today.",
+                description=(
+                    "You need to specify a subcommand.\n\n"
+                    "**Subcommands:**\n"
+                    "`list` - List all days off applied by the server members.\n"
+                    "`add` - Take a day off.\n"
+                    "`cancel` - Cancel one or more days off.\n"
+                    "`today` - List the attendance today.",
+                )
                 color=0xE02B2B
             )
             await context.send(embed=embed)
 
     @dayoff.command(
         base="dayoff",
-        name="show",
-        description="Show the list of day off.",
+        name="list",
+        description="List all days off applied by the server members.",
     )
     @checks.not_blacklisted()
-    async def dayoff_show(self, context: Context) -> None:
+    async def dayoff_list(self, context: Context) -> None:
         """
-        Shows the all list of day off users.
+        List all days off applied by the server members.
 
         :param context: The hybrid command context.
         """
@@ -237,7 +244,7 @@ class Attend(commands.Cog, name="attend"):
 
         view = ui.View()
         select_ui = ui.Select(
-            placeholder="請選擇要刪除的分享",
+            placeholder="請選擇要刪除的假單",
             options=options,
             min_values=1,
             max_values=max(len(options), 1)
@@ -286,7 +293,7 @@ class Attend(commands.Cog, name="attend"):
     @checks.not_blacklisted()
     async def today(self, context: Context) -> None:
         """
-        Show the all days-off today.
+        List the all days-off today.
 
         :param context: The hybrid command context.
         :param user: The user that want to display day off today.
