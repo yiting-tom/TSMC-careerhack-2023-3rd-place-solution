@@ -145,9 +145,5 @@ cython_debug/
 
 # Log file
 discord.log
-.config
-.vscode
-data
-
-config.json
 discord-ext-forms
+data
