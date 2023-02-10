@@ -6,11 +6,10 @@ Description:
 Version: 5.5.0
 """
 
-import asyncio
 import random
 import discord
 from discord import app_commands
-from discord.ext import commands
+from discord.ext import commands, tasks
 from discord.ext.commands import Context
 from helpers import checks, db_manager
 from discord.ext.forms import Form, Validator, ReactionForm, ReactionMenu
@@ -82,7 +81,8 @@ def create_embed_by_todo_list(todo_list, title: str = "To-do list"):
             inline=False
         )
 
-    embed.set_footer(text=f"{random.choice(golden_words)}")
+    embed.set_footer(
+        text=f"-------------------------\n{random.choice(golden_words)}")
 
     return embed
 
@@ -99,6 +99,9 @@ async def check_time_format(ctx: commands.Context, message: discord.Message):
 
     try:
         time = datetime.strptime(message.content, "%H:%M")
+
+        print(time.hour)
+        print(time.minute)
 
         if time.hour > 23 or time.minute > 59:
             return False
@@ -263,21 +266,43 @@ class Todo(commands.Cog, name="todo"):
 
         todo_adapter.set_remind_time(
             user_id=context.author.id,
-            remind_time=result.time,
+            remind_time=datetime.strftime(result.time, "%H:%M"),
         )
 
         embed = discord.Embed(
+            # datetime.strptime(message.content, "%H:%M")
             title="成功設定每日提醒的時間 ✅",
+            description=f"每日 {result.time.strftime('%H:%M')} 會提醒你",
             color=0xE02B2B
         )
 
-        embed.add_field(name="每日提醒的時間", value=result.time, inline=False)
-
         await context.send(embed=embed)
 
-    
+    @commands.Cog.listener()
+    async def on_ready(self):
+        self.remind.start()
 
+    @tasks.loop(minutes=1)
+    async def remind(self):
+        """Remind user of their todos every day."""
+        now = datetime.now()
+        todos = todo_adapter.get_todos_by_remind_time(
+            remind_time=now.strftime("%H:%M")
+        )
+
+        for todo in todos:
+
+            user = self.bot.get_user(int(todo["user_id"]))
+
+            u_todos = todo_adapter.get_todos(user_id=str(todo["user_id"]))
+
+            embed = create_embed_by_todo_list(
+                todo_list=u_todos, title=f"🔔 每日提醒 {user}，以下是你的 To-Do List")
+
+            await user.send(embed=embed)
 
 # And then we finally add the cog to the bot so that it can load, unload, reload and use it's content.
+
+
 async def setup(bot):
     await bot.add_cog(Todo(bot))

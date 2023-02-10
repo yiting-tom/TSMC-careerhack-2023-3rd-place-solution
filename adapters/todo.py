@@ -7,7 +7,7 @@ from models.todo import Todo, TodoToAdd, TodoToDelete
 from models.user import UserToAdd, UserToUpdate
 import adapters.user as user_adapter
 from utils import dict_to_objects
-
+from datetime import datetime
 
 def add_todo(user_id: str, subject: str, description: Optional[str]):
     """ Add a todo to the database."""
@@ -78,3 +78,13 @@ def set_remind_time(user_id: str, remind_time: str):
     )
 
     user_adapter.update_one_user(user_to_update)
+
+
+def get_todos_by_remind_time(remind_time: str) -> List[Todo]:
+    """ Get user's all todos from the database."""
+
+    api = f"{API_URL}/items/user?filter[todo_time][_eq]={remind_time}"
+
+    todos = requests.get(api).json()["data"]
+
+    return todos
