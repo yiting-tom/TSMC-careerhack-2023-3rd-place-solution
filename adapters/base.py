@@ -1,8 +1,12 @@
+import os
 import dataclasses
 import requests
 from typing import Any
 
 from utils.logger import L
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 FIELD_MAPPING = {
@@ -13,7 +17,8 @@ FIELD_MAPPING = {
     "dayoff": {"dayoff_id", "time", "user.*", "server.*"},
     "todo": {"todo_id", "user.*", "subject", "description"}
 }
-API_URL = "http://140.116.245.105:33332"
+API_URL = os.getenv("API_RUL_BASE")
+
 class Request:
     def __init__(self, resource):
         self._resource = resource
