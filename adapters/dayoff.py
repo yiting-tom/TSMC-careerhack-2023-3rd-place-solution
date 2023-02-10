@@ -113,6 +113,26 @@ def get_dayoff_after_today():
         result.append([dayoff["user"]["user_id"], dayoff["time"]])
     return result
 
+def delete_dayoff(user_id: str, server_id: str, date: str):
+    """
+    """
+    dayoffs = Querier("dayoff")\
+        .filter_by("[user][user_id]", "eq", user_id)\
+        .filter_by("[server][server_id]", "eq", server_id)\
+        .filter_by("[time]", "eq", date)\
+        .query()
+
+    delete_one_dayoff(DayoffToDelete(dayoff_id=dayoff['dayoff_id']))
+
+def get_user_by_server_and_date(server_id: str, date: str):
+    dayoffs = Querier("dayoff")\
+        .filter_by("[server][server_id]", "eq", server_id)\
+        .filter_by("[time]", "eq", date)\
+        .query()
+    result = []
+    for dayoff in dayoffs:
+        result.append([dayoff["user"]["user_id"], dayoff["time"]])
+    return result
 
 def add_one_dayoff(dayoff: DayoffToAdd) -> Dayoff:
     """add_one_dayoff
