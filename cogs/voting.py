@@ -183,7 +183,8 @@ class Voting(commands.Cog, name="voting"):
         if len(voting_keys) == 0:
             await context.send(f'No existed voting event. 🥺', ephemeral=True)
         else:
-            await context.send(f'📜 Existed voting event: \"{"*, *".join(voting_keys)}\"', ephemeral=True)
+            voting_string = '"**"' + '", "'.join(voting_keys) + '"**"'
+            await context.send(f"📜 Existed voting event: {voting_string}", ephemeral=True)
 
     @vote.command(
         name="max_vote",
