@@ -100,9 +100,6 @@ async def check_time_format(ctx: commands.Context, message: discord.Message):
     try:
         time = datetime.strptime(message.content, "%H:%M")
 
-        print(time.hour)
-        print(time.minute)
-
         if time.hour > 23 or time.minute > 59:
             return False
 

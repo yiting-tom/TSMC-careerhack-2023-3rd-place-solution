@@ -287,7 +287,5 @@ def delete_shares_by_share_ids(share_ids: List[str]):
 
     share_ids = [str(share_id) for share_id in share_ids]
 
-    print(share_ids)
-
     for share_id in share_ids:
         delete_one_share(ShareToDelete(share_id=share_id))

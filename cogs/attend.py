@@ -168,7 +168,6 @@ class Attend(commands.Cog, name="attend"):
         )
         users = []
         for bluser in dayoff_users:
-            print(bluser)
             user = self.bot.get_user(int(bluser[0])) or await self.bot.fetch_user(int(bluser[0]))
             users.append(
                 f"• {user.mention} ({user}) - Day off in *{bluser[1]}*")

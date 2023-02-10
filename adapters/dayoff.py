@@ -122,7 +122,6 @@ def delete_dayoff(user_id: str, server_id: str, date: str):
         .filter_by("[time]", "eq", date)\
         .query()
 
-    print(dayoffs)
     delete_one_dayoff(DayoffToDelete(dayoff_id=dayoffs[0]['dayoff_id']))
 
 def get_user_by_server_and_date(server_id: str, date: str):
