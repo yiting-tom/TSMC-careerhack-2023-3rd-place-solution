@@ -14,7 +14,7 @@ from discord.ui import Select, View
 from discord.ext.commands import Context
 
 from helpers import checks
-from helpers.db_manager import add_vote, update_remind_time, delete_expire_event, get_remind_user, voting_record
+from helpers.db_manager import add_vote, update_remind_time, delete_expire_event, get_remind_user, vote_record, delete_vote_user
 
 DEFAULT_TIME_PERIOD = 4
 DEFAULT_REMIND_PERIOD = datetime.timedelta(hours=3, minutes=30)
@@ -24,9 +24,11 @@ class Voting(commands.Cog, name="voting"):
     def __init__(self, bot):
         self.bot = bot
 
-        # self.voting : dict{voting_type : dict{'option' : vote_count}} -> maintaining the voting event
+        # self.voting : dict{voting_type : dict{'user_id' : [options]}} -> maintaining the voting event -> It is better to store the event in the database for resuming the event
+        # self.voting_option : dict{voting_type : [options]} -> maintaining the voting event's option -> It is better to store the event in the database for resuming the event
         # self.voting_config : dict{voting_type : [min_vote, max_vote, end_time]} -> record the min_vote, max_vote and the time of the end of the vote
         self.voting = dict()
+        self.voting_option = dict()
         self.voting_config = dict()
 
         self.date_pattern = re.compile(r'(\d+)-(\d+)-(\d+)')
@@ -75,50 +77,38 @@ class Voting(commands.Cog, name="voting"):
 
         :param context: The application command context.
         """
-        # Do your stuff here
-
         # Don't forget to remove "pass", I added this just because there's no content in the method.
-        if voting_type:
-            if not self.test_voting_event(voting_type):
-                await context.reply(f"Error : The voting type {voting_type} hasn't been created.")
-                return
+        if not self.test_voting_event(voting_type):
+            await context.reply(f"Error : The voting type {voting_type} hasn't been created.", ephemeral=True)
+            return
 
-            if len(self.voting[voting_type]) == 0:
-                await context.reply(f"Error : There are no options in voting type {voting_type}.")
-                return
+        if len(self.voting_option[voting_type]) == 0:
+            await context.reply(f"Error : There are no options in voting type {voting_type}.", ephemeral=True)
+            return
 
-            select_box = Select(
-                min_values=self.voting_config[voting_type][0],
-                max_values=self.voting_config[voting_type][1],
-                placeholder=f"options for {voting_type}",
-                options=[discord.SelectOption(label=f"{option}") for option in list(self.voting[voting_type].keys())])
+        select_box = Select(
+            min_values=self.voting_config[voting_type][0],
+            max_values=self.voting_config[voting_type][1],
+            placeholder=f"options for {voting_type}",
+            options=[discord.SelectOption(label=f"{option}") for option in self.voting_option[voting_type]])
 
-            async def deal_data(interaction):
-                for selected in select_box.values:
-                    self.voting[voting_type][selected] += 1
-                print(self.voting)
-                await interaction.response.send_message(f"You choose : {', '.join(select_box.values)}", ephemeral=True)
+        async def deal_data(interaction):
+            self.voting[voting_type][str(interaction.user.id)] = list(select_box.values)
+            print(self.voting)
+            await interaction.response.send_message(f"You choose : {', '.join(select_box.values)}", ephemeral=True)
+            await delete_vote_user(server_id=interaction.guild_id, user_id=interaction.user.id, vote_name=voting_type)
+        select_box.callback = deal_data
+        view = View()
+        view.add_item(select_box)
 
-            select_box.callback = deal_data
-            view = View()
-            view.add_item(select_box)
-            await context.reply(f"These are the option of {voting_type}.", view=view)
-        else:
-            pass
-
-
-    @vote.command(
-        name="testing"
-    )
-    async def vote_testing(self, context: Context):
-        channel = self.bot.get_channel(408537090712928260)
-        user = self.bot.get_user(408537090712928260)
-        await user.send("hello there")
-        # print(channel)
-        # print(channel.members)
-        # channel.send('test msg')
-
-        print(user)
+        counted_votes = Counter()
+        for personal_vote in self.voting[voting_type].values():
+            counted_votes += Counter(personal_vote)
+        embed = discord.Embed(
+            description=f"The number of votes of each option :\n{', '.join([f'{k} : {v}'for k, v in counted_votes.items()])}",
+            color=0xE02B2B
+        )
+        await context.reply(f"These are the option of {voting_type}.", embed=embed, view=view)
 
 
     @vote.command(
@@ -136,20 +126,13 @@ class Voting(commands.Cog, name="voting"):
         try :
             assert(voting_type is not None)
         except :
-            await context.reply(f'Error : The voting type should not be None')
+            await context.reply(f'Error : The voting type should not be None', ephemeral=True)
             return
 
-        try:
-            if len(time) > 3 :
-                min_vote = max(int(time[-2]), 1)
-                max_vote = max(int(time[-1]), 1)
-            else :
-                min_vote = 1
-                max_vote = max(int(time[-1]), 1)
-        except:
-            min_vote = 1
-            max_vote = 1
+        min_vote = 1
+        max_vote = 1
         self.voting[voting_type] = dict()
+        self.voting_option[voting_type] = list()
         self.voting_config[voting_type] = [min_vote, max_vote] if min_vote <= max_vote else [max_vote, min_vote]
 
         # Convert the time into a formal type.
@@ -160,23 +143,24 @@ class Voting(commands.Cog, name="voting"):
                 time = [time_val.zfill(2) for time_val in day] + [time_val.zfill(2) for time_val in time]
                 print(time)
             except:
-                await context.reply(f"Something wrong while setting the time. ValueError : Your input is {', '.join([x for x in time])} The end of the voting period will be set to {DEFAULT_TIME_PERIOD} hours later.")
+                await context.reply(f"Something wrong while setting the time. ValueError : Your input is {', '.join([x for x in time])} The end of the voting period will be set to {DEFAULT_TIME_PERIOD} hours later.", ephemeral=True)
 
         if time:
             remind_time = datetime.datetime.now()
             remind_time = remind_time.replace(year=int(f'20{time[0][-2:]}'), month=int(time[1]), day=int(time[2]), hour=int(time[3]), minute=int(time[4]))
-            self.voting_config[voting_type].append(f'{remind_time.year}-{remind_time.month}-{remind_time.day} {remind_time.hour}:{remind_time.minute}')
+            self.voting_config[voting_type].append(f'{remind_time.year}-{str(remind_time.month).zfill(2)}-{str(remind_time.day).zfill(2)} {str(remind_time.hour).zfill(2)}:{str(remind_time.minute).zfill(2)}')
             remind_time -= DEFAULT_REMIND_BEFORE_END
         else:
             remind_time = datetime.datetime.now()
             # default remind time
             remind_time += DEFAULT_REMIND_PERIOD
             end_vote_time = remind_time + DEFAULT_REMIND_BEFORE_END
-            self.voting_config[voting_type].append(f'{end_vote_time.year}-{end_vote_time.month}-{end_vote_time.day} {end_vote_time.hour}:{end_vote_time.minute}')
+            self.voting_config[voting_type].append(f'{end_vote_time.year}-{str(end_vote_time.month).zfill(2)}-{str(end_vote_time.day).zfill(2)} {str(end_vote_time.hour).zfill(2)}:{str(end_vote_time.minute).zfill(2)}')
         if remind_time:
-            async for user_id in context.guild.fetch_members():
+            print(context.channel.members)
+            for user_id in context.channel.members:
                 if not user_id.bot:
-                    print(len(await add_vote(server_id=context.guild.id, user_id=user_id, vote_name=voting_type, remind_at=f'{remind_time.year}-{remind_time.month}-{remind_time.day} {remind_time.hour}:{remind_time.minute}')))
+                    print(len(await add_vote(server_id=context.guild.id, user_id=user_id, vote_name=voting_type, remind_at=f'{remind_time.year}-{str(remind_time.month).zfill(2)}-{str(remind_time.day).zfill(2)} {str(remind_time.hour).zfill(2)}:{str(remind_time.minute).zfill(2)}')))
         print(self.voting_config[voting_type])
         await context.send(f'Create a voting event : {voting_type} (the event will end at : {self.voting_config[voting_type][-1]})')
 
@@ -191,8 +175,34 @@ class Voting(commands.Cog, name="voting"):
         :param context: The application command context.
         """
 
-        await context.send(f'Existed voting event : {", ".join([x for x in self.voting.keys()])}')
+        await context.send(f'Existed voting event : {", ".join([x for x in self.voting_option.keys()])}', ephemeral=True)
 
+    @vote.command(
+        name="max_vote",
+        description="Showing the existed voting event.",
+    )
+    async def vote_max_vote(self, context: Context, voting_type : str, max_vote : int):
+        """
+        This is a testing command that does nothing.
+
+        :param context: The application command context.
+        """
+        try :
+            assert(voting_type is not None)
+        except :
+            await context.reply(f'Error : The voting type should not be None', ephemeral=True)
+            return
+
+        try :
+            assert(self.voting_option.get(voting_type, None) is not None)
+        except :
+            await context.reply(f"Error : The voting type hasn't been created.", ephemeral=True)
+            return
+        if max_vote > self.voting_config[voting_type][0] :
+            self.voting_config[voting_type][1] = max_vote
+            await context.send(f"The voting event {voting_type}'s max_vote is set to {max_vote}.")
+        else :
+            await context.send(f"ValueError : {max_vote} is not a valid number.", ephemeral=True)
     @vote.command(
         name="add_option",
         description="Add option to a specific voting.",
@@ -206,17 +216,18 @@ class Voting(commands.Cog, name="voting"):
         """
         print(self.voting.keys())
         if not self.test_voting_event(voting_type):
-            await context.reply(f"Error : The voting type {voting_type} hasn't been created.")
+            await context.reply(f"Error : The voting type {voting_type} hasn't been created.", ephemeral=True)
             return
 
         added_option = list()
 
         for option in options:
-            if option not in self.voting[voting_type].keys():
-                self.voting[voting_type][option] = 0
+            if option not in self.voting_option[voting_type]:
+                self.voting[voting_type] = dict()
                 added_option.append(option)
+                self.voting_option[voting_type].append(option)
 
-        print(self.voting[voting_type].keys())
+        print(self.voting_option[voting_type])
         await context.send(f'Added {", ".join([x for x in added_option])} to event {voting_type}')
 
 
@@ -233,31 +244,37 @@ class Voting(commands.Cog, name="voting"):
         """
 
         if not self.test_voting_event(voting_type):
-            await context.reply(f"Error : The voting type {voting_type} hasn't been created.")
+            await context.reply(f"Error : The voting type {voting_type} hasn't been created.", ephemeral=True)
             return
 
         removed_option = list()
         removed_wrong_option = list()
         removed_failed_option = list()
 
+        print(options)
         for option in options:
-            if option in self.voting[voting_type].keys():
-                if self.voting[voting_type][option] > 0:
+            fail_flag = False
+            for personal_vote in self.voting[voting_type].values():
+                if option in personal_vote:                       
                     removed_failed_option.append(option)
+                    fail_flag = True
                     continue
-                self.voting[voting_type].pop(option)
-                removed_option.append(option)
-            else:
+            if option not in self.voting_option[voting_type]:
                 removed_wrong_option.append(option)
+                continue
+            elif fail_flag:
+                continue
+            self.voting_option[voting_type].pop(self.voting_option[voting_type].index(option))
+            removed_option.append(option)
 
-        print(self.voting[voting_type].keys())
+        print(self.voting_option[voting_type])
 
         if removed_option:
             await context.send(f'Deleted {", ".join([x for x in removed_option])} from event {voting_type}')
         if removed_wrong_option:
-            await context.reply(f'Option {", ".join([x for x in removed_wrong_option])} are not in voting event {voting_type}')
+            await context.reply(f'Option {", ".join([x for x in removed_wrong_option])} are not in voting event {voting_type}', ephemeral=True)
         if removed_failed_option:
-            await context.reply(f"Somebody has voted {', '.join([x for x in removed_failed_option])}. It can't be deleted.")
+            await context.reply(f"Somebody has voted {', '.join([x for x in removed_failed_option])}. It can't be deleted.", ephemeral=True)
 
     @vote.command(
         name="set_time",
@@ -267,7 +284,7 @@ class Voting(commands.Cog, name="voting"):
     async def vote_set_time(self, context: Context, voting_type: str, *time : str):
 
         if not self.test_voting_event(voting_type):
-            await context.reply(f"Error : The voting type {voting_type} hasn't been created.")
+            await context.reply(f"Error : The voting type {voting_type} hasn't been created.", ephemeral=True)
             return
         # Convert the time into a formal type.
         day = self.date_pattern.findall(time[0])[0]
@@ -278,12 +295,12 @@ class Voting(commands.Cog, name="voting"):
             try:
                 remind_time = datetime.datetime.now()
                 remind_time = remind_time.replace(year=int(f'20{time[0][-2:]}'), month=int(time[1]), day=int(time[2]), hour=int(time[3]), minute=int(time[4]))
-                self.voting_config[voting_type][-1] = f'{remind_time.year}-{remind_time.month}-{remind_time.day} {remind_time.hour}:{remind_time.minute}'
+                self.voting_config[voting_type][-1] = f'{remind_time.year}-{str(remind_time.month).zfill(2)}-{str(remind_time.day).zfill(2)} {str(remind_time.hour).zfill(2)}:{str(remind_time.minute).zfill(2)}'
                 remind_time -= DEFAULT_REMIND_BEFORE_END
             except:
-                await context.reply(f"Something wrong while setting the time. ValueError : Your input is {', '.join([x for x in time])}.")
+                await context.reply(f"Something wrong while setting the time. ValueError : Your input is {', '.join([x for x in time])}.", ephemeral=True)
                 return
-        print(await update_remind_time(server_id=context.guild.id, vote_name=voting_type, remind_at=f'{remind_time.year}-{remind_time.month}-{remind_time.day} {remind_time.hour}:{remind_time.minute}'))
+        print(await update_remind_time(server_id=context.guild.id, vote_name=voting_type, remind_at=f'{remind_time.year}-{str(remind_time.month).zfill(2)}-{str(remind_time.day).zfill(2)} {str(remind_time.hour).zfill(2)}:{str(remind_time.minute).zfill(2)}'))
         await context.reply(f"The end of the time of the voting event {voting_type} has been postponed. The end of the time of the voting event is {int(f'20{time[0][-2:]}')}-{int(time[1])}-{int(time[2])} {int(time[3])}:{int(time[4])}")
 
     @vote.command(
@@ -292,13 +309,13 @@ class Voting(commands.Cog, name="voting"):
     )
     async def vote_end(self, context: Context, voting_type: str):
         if not self.test_voting_event(voting_type):
-            await context.reply(f"Error : The voting type {voting_type} hasn't been created.")
+            await context.reply(f"Error : The voting type {voting_type} hasn't been created.", ephemeral=True)
             return
         await context.reply(f"The end of the time of the voting event {voting_type} is {self.voting_config[voting_type][-1]}")
 
     def test_voting_event(self, voting_type: str) -> bool:
         try :
-            assert(voting_type in self.voting.keys())
+            assert(voting_type in self.voting_option.keys())
             return True
         except :
             return False
@@ -308,32 +325,34 @@ class Voting(commands.Cog, name="voting"):
         self.remind.start()
         self.calculate_voting_result.start()
 
-    @tasks.loop(minutes = 1.0)
+    @tasks.loop(seconds = 5.0)
     async def remind(self):
         remind_time = datetime.datetime.now()
         print(remind_time)
-        user_id_list = await get_remind_user(remind_at=f'{remind_time.year}-{remind_time.month}-{remind_time.day} {remind_time.hour}:{remind_time.minute}')
-        print(user_id_list)
-        for user_id in user_id_list:
-            user = self.bot.get_user(user_id)
-            await user.send(":poop:")
-        await delete_expire_event(remind_at=f'{remind_time.year}-{remind_time.month}-{remind_time.day} {remind_time.hour}:{remind_time.minute}')
+        user_event_list = await get_remind_user(remind_at=f'{remind_time.year}-{str(remind_time.month).zfill(2)}-{str(remind_time.day).zfill(2)} {str(remind_time.hour).zfill(2)}:{str(remind_time.minute).zfill(2)}')
+        print(user_event_list)
+        for user_event in user_event_list:
+            user = self.bot.get_user(user_event[0])
+            guild_name = self.bot.get_guild(int(user_event[2])).name
+            await user.send(f"You have a voting event {user_event[1]} in server {guild_name}")
+        await delete_expire_event(remind_at=f'{remind_time.year}-{str(remind_time.month).zfill(2)}-{str(remind_time.day).zfill(2)} {str(remind_time.hour).zfill(2)}:{str(remind_time.minute).zfill(2)}')
 
 
     @tasks.loop(minutes = 1.0)
     async def calculate_voting_result(self):
         remind_time = datetime.datetime.now()
-        remind_time = f'{remind_time.year}-{remind_time.month}-{remind_time.day} {remind_time.hour}:{remind_time.minute}'
+        remind_time = f'{remind_time.year}-{str(remind_time.month).zfill(2)}-{str(remind_time.day).zfill(2)} {str(remind_time.hour).zfill(2)}:{str(remind_time.minute).zfill(2)}'
         for voting_event_name, event_config in self.voting_config.items():
             if event_config[-1] == remind_time:
                 storing_record = list()
                 self.voting_config.pop(voting_event_name)
+                self.voted_id.pop(voting_event_name)
                 voting_record = self.voting.pop(voting_event_name)
                 voting_record = Counter(voting_record)
                 for k, _ in voting_record.most_common(2):
                     storing_record.append(k)
                 if k >= 2:
-                    await voting_record(vote_type=voting_event_name, first_place=storing_record[0], second_place=storing_record[1])
+                    await vote_record(vote_type=voting_event_name, first_place=storing_record[0], second_place=storing_record[1])
 
 # And then we finally add the cog to the bot so that it can load, unload, reload and use it's content.
 async def setup(bot):
