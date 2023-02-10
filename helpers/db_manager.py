@@ -122,6 +122,7 @@ async def get_warnings(user_id: int, server_id: int) -> list:
             return result_list
 
 
+<<<<<<< HEAD
 async def get_share_tags(server_id: int) -> list:
     """
     This function will get all the tags of a server.
@@ -160,18 +161,97 @@ async def check_shares(user_id: int, server_id: int) -> list:
     """
     This function will check if a share exists.
 
+=======
+async def in_day_off_list(user_id: int, server_id: int, date: str) -> bool:
+    """
+    This function will check if a user is blacklisted.
+
+    :param user_id: The ID of the user that should be checked.
+    :return: True if the user is blacklisted, False if not.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        async with db.execute("SELECT * FROM dayoff WHERE user_id=? AND server_id=? AND time=? ", (user_id, server_id, date, )) as cursor:
+            result = await cursor.fetchone()
+            return result is not None
+
+
+async def get_dayoff_users() -> list:
+    """
+    This function will return the list of all day off users.
+
+    :param user_id: The ID of the user that should be checked.
+    :return: True if the user is blacklisted, False if not.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        async with db.execute("SELECT user_id, strftime('%Y-%m-%d', time) FROM dayoff ORDER BY time") as cursor:
+            result = await cursor.fetchall()
+            return result
+
+
+async def get_today_dayoff_users(server_id: int, date: str) -> list:
+    """
+    This function will return the list of all day off users.
+
+    :param user_id: The ID of the user that should be checked.
+    :return: True if the user is blacklisted, False if not.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        async with db.execute("SELECT * FROM dayoff WHERE server_id=? AND time=? ", (server_id, date, )) as cursor:
+            result = await cursor.fetchall()
+            return result
+
+
+async def add_user_to_dayoff(user_id: int, server_id: int, date: str, description: str) -> int:
+    """
+    This function will add a user based on its ID in the day-off list.
+
+    :param user_id: The ID of the user that should be added into the blacklist.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute("INSERT INTO dayoff(user_id, server_id, time, description) VALUES (?, ?, ?, ?)", (user_id, server_id, date, description ))
+        await db.commit()
+        rows = await db.execute("SELECT COUNT(*) FROM dayoff")
+        async with rows as cursor:
+            result = await cursor.fetchone()
+            return result[0] if result is not None else 0
+
+
+async def remove_user_from_dayoff(user_id: int, server_id: int, date: str) -> int:
+    """
+    This function will remove a user based on its ID from the blacklist.
+
+    :param user_id: The ID of the user that should be removed from the blacklist.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute("DELETE FROM dayoff WHERE user_id=? AND server_id=? AND time=?", (user_id, server_id, date, ))
+        await db.commit()
+        rows = await db.execute("SELECT COUNT(*) FROM dayoff")
+        async with rows as cursor:
+            result = await cursor.fetchone()
+            return result[0] if result is not None else 0
+
+
+async def check_dayoff(user_id: int, server_id: int) -> list:
+    """
+    This function will check if the days-off exists.
+>>>>>>> main
     :param server_id: The ID of the server that should be checked.
     :param tag: The tag of the share that should be checked.
     :return: A list of all the shares of the server.
     """
     async with aiosqlite.connect(DATABASE_PATH) as db:
+<<<<<<< HEAD
         rows = await db.execute("SELECT share_id, title, description, url, tag FROM shares WHERE user_id=? AND server_id=?", (user_id, server_id))
+=======
+        rows = await db.execute("SELECT time, created_at FROM dayoff WHERE user_id=? AND server_id=?", (user_id, server_id))
+>>>>>>> main
         async with rows as cursor:
             result = await cursor.fetchall()
             result_list = []
             for row in result:
                 result_list.append(
                     {
+<<<<<<< HEAD
                         "share_id": row[0],
                         "title": row[1],
                         "description": row[2],
@@ -214,3 +294,10 @@ async def get_shares_by_tag(server_id: int, tag: str):
                     }
                 )
             return result_list
+=======
+                        "time": row[0],
+                        "created_at": row[1],
+                    }
+                )
+            return result_list
+>>>>>>> main
