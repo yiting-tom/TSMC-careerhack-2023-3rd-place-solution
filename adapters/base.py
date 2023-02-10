@@ -16,7 +16,7 @@ FIELD_MAPPING = {
     "tag": {"tag_id"},
     "dayoff": {"dayoff_id", "time", "user.*", "server.*"},
 }
-API_URL = os.getenv("API_RUL_BASE")
+API_URL = os.getenv("API_URL_BASE")
 
 class Request:
     def __init__(self, resource):
