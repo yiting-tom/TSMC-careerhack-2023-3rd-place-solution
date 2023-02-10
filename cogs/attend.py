@@ -5,6 +5,7 @@ Description:
 
 Version: 5.5.0
 """
+from datetime import datetime, timedelta
 
 import discord
 from discord import app_commands
@@ -12,9 +13,10 @@ from discord.ext import tasks, commands
 from discord.ext.commands import Context
 from discord import ui
 
-from helpers import checks, db_manager
+from adapters.dayoff import get_user_in_date, add_one_dayoff, get_dayoff_after_today, get_dayoff_by_user_and_server
+from helpers import checks
 
-from datetime import datetime, timedelta
+from models.dayoff import DayoffToAdd
 
 
 class ButtonCheck(discord.ui.View):
@@ -67,7 +69,8 @@ class DayoffAddModal(ui.Modal):
             await interaction.response.send_message(embed=embed)
             return
 
-        if await db_manager.in_day_off_list(user_id, server_id, date):
+        # if await db_manager.in_day_off_list(user_id, server_id, date):
+        if get_user_in_date(str(user_id), str(server_id), date.isoformat()):
             embed = discord.Embed(
                 description=f"**{interaction.user.name}** 已經在 **{date}** 提出請假申請",
                 color=0xE02B2B
@@ -80,12 +83,19 @@ class DayoffAddModal(ui.Modal):
             color=0x9C84EF
         )
 
-        await db_manager.add_user_to_dayoff(
+
+        # await db_manager.add_user_to_dayoff(
+        #     user_id=user_id,
+        #     server_id = server_id,
+        #     date=date,
+        #     description = description
+        # )
+        add_one_dayoff(DayoffToAdd(
             user_id=user_id,
-            server_id = server_id,
+            server_id=server_id,
             date=date,
-            description = description
-        )
+            description=description
+        ))
 
         await interaction.response.send_message(embed=embed)
 
@@ -136,7 +146,9 @@ class Attend(commands.Cog, name="attend"):
 
         :param context: The hybrid command context.
         """
-        dayoff_users = await db_manager.get_dayoff_users()
+        # dayoff_users = await db_manager.get_dayoff_users()
+        dayoff_users = get_dayoff_after_today()
+
         if len(dayoff_users) == 0:
             embed = discord.Embed(
                 description="目前沒有人請假",
@@ -193,8 +205,14 @@ class Attend(commands.Cog, name="attend"):
             await context.send("This function can only be used in a server.")
             return
 
-        dayoffs = await db_manager.check_dayoff(user_id=context.author.id,
-                                               server_id=context.guild.id)
+        # dayoffs = await db_manager.check_dayoff(
+        #     user_id=context.author.id,
+        #     server_id=context.guild.id,
+        # )
+        dayoffs = get_dayoff_by_user_and_server(
+            user_id=context.author.id,
+            server_id=context.guild.id,
+        )
 
         if len(dayoffs) == 0:
             embed = discord.Embed(
