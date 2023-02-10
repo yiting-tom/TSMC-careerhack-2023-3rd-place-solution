@@ -95,7 +95,6 @@ class Voting(commands.Cog, name="voting"):
 
         async def deal_data(interaction):
             self.voting[voting_type][str(interaction.user.id)] = list(select_box.values)
-            print(self.voting)
             await interaction.response.send_message(f"You choose : {', '.join(select_box.values)}", ephemeral=True)
             await delete_vote_user(server_id=interaction.guild_id, user_id=interaction.user.id, vote_name=voting_type)
         select_box.callback = deal_data
@@ -141,7 +140,6 @@ class Voting(commands.Cog, name="voting"):
                 day = self.date_pattern.findall(time[0])[0]
                 time = self.time_pattern.findall(time[1])[0]
                 time = [time_val.zfill(2) for time_val in day] + [time_val.zfill(2) for time_val in time]
-                print(time)
             except:
                 await context.reply(f"Something wrong while setting the time. ValueError : Your input is {', '.join([x for x in time])} The end of the voting period will be set to {DEFAULT_TIME_PERIOD} hours later.", ephemeral=True)
 
@@ -157,11 +155,13 @@ class Voting(commands.Cog, name="voting"):
             end_vote_time = remind_time + DEFAULT_REMIND_BEFORE_END
             self.voting_config[voting_type].append(f'{end_vote_time.year}-{str(end_vote_time.month).zfill(2)}-{str(end_vote_time.day).zfill(2)} {str(end_vote_time.hour).zfill(2)}:{str(end_vote_time.minute).zfill(2)}')
         if remind_time:
-            print(context.channel.members)
             for user_id in context.channel.members:
                 if not user_id.bot:
-                    print(len(await add_vote(server_id=context.guild.id, user_id=user_id, vote_name=voting_type, remind_at=f'{remind_time.year}-{str(remind_time.month).zfill(2)}-{str(remind_time.day).zfill(2)} {str(remind_time.hour).zfill(2)}:{str(remind_time.minute).zfill(2)}')))
-        print(self.voting_config[voting_type])
+                    await add_vote(
+                        server_id=context.guild.id,
+                        user_id=user_id,
+                        vote_name=voting_type,
+                        remind_at=f'{remind_time.year}-{str(remind_time.month).zfill(2)}-{str(remind_time.day).zfill(2)} {str(remind_time.hour).zfill(2)}:{str(remind_time.minute).zfill(2)}')
         await context.send(f'Create a voting event : {voting_type} (the event will end at : {self.voting_config[voting_type][-1]})')
 
     @vote.command(
@@ -214,7 +214,6 @@ class Voting(commands.Cog, name="voting"):
 
         :param context: The application command context.
         """
-        print(self.voting.keys())
         if not self.test_voting_event(voting_type):
             await context.reply(f"Error : The voting type {voting_type} hasn't been created.", ephemeral=True)
             return
@@ -227,7 +226,6 @@ class Voting(commands.Cog, name="voting"):
                 added_option.append(option)
                 self.voting_option[voting_type].append(option)
 
-        print(self.voting_option[voting_type])
         await context.send(f'Added {", ".join([x for x in added_option])} to event {voting_type}')
 
 
@@ -251,7 +249,6 @@ class Voting(commands.Cog, name="voting"):
         removed_wrong_option = list()
         removed_failed_option = list()
 
-        print(options)
         for option in options:
             fail_flag = False
             for personal_vote in self.voting[voting_type].values():
@@ -267,7 +264,6 @@ class Voting(commands.Cog, name="voting"):
             self.voting_option[voting_type].pop(self.voting_option[voting_type].index(option))
             removed_option.append(option)
 
-        print(self.voting_option[voting_type])
 
         if removed_option:
             await context.send(f'Deleted {", ".join([x for x in removed_option])} from event {voting_type}')
@@ -290,7 +286,6 @@ class Voting(commands.Cog, name="voting"):
         day = self.date_pattern.findall(time[0])[0]
         time = self.time_pattern.findall(time[1])[0]
         time = [time_val.zfill(2) for time_val in day] + [time_val.zfill(2) for time_val in time]
-        print(time)
         if time:
             try:
                 remind_time = datetime.datetime.now()
@@ -300,7 +295,7 @@ class Voting(commands.Cog, name="voting"):
             except:
                 await context.reply(f"Something wrong while setting the time. ValueError : Your input is {', '.join([x for x in time])}.", ephemeral=True)
                 return
-        print(await update_remind_time(server_id=context.guild.id, vote_name=voting_type, remind_at=f'{remind_time.year}-{str(remind_time.month).zfill(2)}-{str(remind_time.day).zfill(2)} {str(remind_time.hour).zfill(2)}:{str(remind_time.minute).zfill(2)}'))
+        await update_remind_time(server_id=context.guild.id, vote_name=voting_type, remind_at=f'{remind_time.year}-{str(remind_time.month).zfill(2)}-{str(remind_time.day).zfill(2)} {str(remind_time.hour).zfill(2)}:{str(remind_time.minute).zfill(2)}')
         await context.reply(f"The end of the time of the voting event is set to {int(f'20{time[0][-2:]}')}-{int(time[1])}-{int(time[2])} {int(time[3])}:{int(time[4])}")
 
     @vote.command(
@@ -328,9 +323,7 @@ class Voting(commands.Cog, name="voting"):
     @tasks.loop(minutes = 1.0)
     async def remind(self):
         remind_time = datetime.datetime.now()
-        print(remind_time)
         user_event_list = await get_remind_user(remind_at=f'{remind_time.year}-{str(remind_time.month).zfill(2)}-{str(remind_time.day).zfill(2)} {str(remind_time.hour).zfill(2)}:{str(remind_time.minute).zfill(2)}')
-        print(user_event_list)
         for user_event in user_event_list:
             user = self.bot.get_user(user_event[0])
             guild_name = self.bot.get_guild(int(user_event[2])).name
