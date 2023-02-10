@@ -17,7 +17,7 @@ FIELD_MAPPING = {
     "dayoff": {"dayoff_id", "time", "user.*", "server.*"},
     "todo": {"todo_id", "user.*", "subject", "description"}
 }
-API_URL = os.getenv("API_RUL_BASE")
+API_URL = os.getenv("API_URL_BASE")
 
 class Request:
     def __init__(self, resource):
