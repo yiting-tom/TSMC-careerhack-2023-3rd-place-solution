@@ -179,7 +179,11 @@ class Voting(commands.Cog, name="voting"):
         :param context: The application command context.
         """
 
-        await context.send(f'Existed voting event : {", ".join([x for x in self.voting_option.keys()])}', ephemeral=True)
+        voting_keys = [x for x in self.voting_option.keys()]
+        if len(voting_keys) == 0:
+            await context.send(f'No existed voting event. 🥺', ephemeral=True)
+        else:
+            await context.send(f'Existed voting event : {", ".join(voting_keys)}', ephemeral=True)
 
     @vote.command(
         name="max_vote",
