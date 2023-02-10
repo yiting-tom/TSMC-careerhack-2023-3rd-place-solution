@@ -99,7 +99,7 @@ class Voting(commands.Cog, name="voting"):
 
         async def deal_data(interaction):
             self.voting[voting_type][str(interaction.user.id)] = list(select_box.values)
-            await interaction.response.send_message(f"You choose : {', '.join(select_box.values)}", ephemeral=True)
+            await interaction.response.send_message(f"✨ You choose : {', '.join(select_box.values)}", ephemeral=True)
             await delete_vote_user(server_id=interaction.guild_id, user_id=interaction.user.id, vote_name=voting_type)
         select_box.callback = deal_data
         view = View()
@@ -274,11 +274,11 @@ class Voting(commands.Cog, name="voting"):
 
 
         if removed_option:
-            await context.send(f'Deleted {", ".join([x for x in removed_option])} from event {voting_type}')
+            await context.send(f'🗑️ Deleted {", ".join([x for x in removed_option])} from event {voting_type}')
         if removed_wrong_option:
-            await context.reply(f'Option {", ".join([x for x in removed_wrong_option])} are not in voting event {voting_type}', ephemeral=True)
+            await context.reply(f'⚠️ Option {", ".join([x for x in removed_wrong_option])} are not in voting event {voting_type}', ephemeral=True)
         if removed_failed_option:
-            await context.reply(f"Somebody has voted {', '.join([x for x in removed_failed_option])}. It can't be deleted.", ephemeral=True)
+            await context.reply(f"⚠️ Somebody has voted {', '.join([x for x in removed_failed_option])}. It can't be deleted.", ephemeral=True)
 
     @vote.command(
         name="set_time",
@@ -304,7 +304,7 @@ class Voting(commands.Cog, name="voting"):
                 await context.reply(f"Something wrong while setting the time. ValueError : Your input is {', '.join([x for x in time])}.", ephemeral=True)
                 return
         await update_remind_time(server_id=context.guild.id, vote_name=voting_type, remind_at=f'{remind_time.year}-{str(remind_time.month).zfill(2)}-{str(remind_time.day).zfill(2)} {str(remind_time.hour).zfill(2)}:{str(remind_time.minute).zfill(2)}')
-        await context.reply(f"The end of the time of the voting event is set to {int(f'20{time[0][-2:]}')}-{int(time[1])}-{int(time[2])} {int(time[3])}:{int(time[4])}")
+        await context.reply(f"⏰ The event \"**{voting_type}**\" will end at **{int(f'20{time[0][-2:]}')}-{int(time[1])}-{int(time[2])} {int(time[3])}:{int(time[4])}**")
 
     @vote.command(
         name="end",
