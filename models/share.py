@@ -26,7 +26,7 @@ class Share:
 @dataclass
 class ShareToAdd:
     user: User
-    server_id: str
+    server: str
     title: str
     description: Optional[str] = None
     url: Optional[str] = None
@@ -41,7 +41,7 @@ class ShareToAdd:
         tags: Optional[List[str]] = None
     ):
         self.user = {"user_id": user_id}
-        self.server_id = server_id
+        self.server = {"server_id": server_id}
         self.title = title
         self.description = description
         self.url = url

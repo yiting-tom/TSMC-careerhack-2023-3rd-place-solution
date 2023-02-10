@@ -60,7 +60,16 @@ intents.message_content = True
 intents.presences = True
 """
 
+<<<<<<< HEAD
 intents = discord.Intents.all()
+=======
+intents = discord.Intents.default()
+intents.message_content = True
+intents.members = True
+# intents = discord.Intents.all()
+# print(intents)
+# print(discord.Intents.all())
+>>>>>>> 5365d23 (add voting)
 
 """
 Uncomment this if you want to use prefix (normal) commands.

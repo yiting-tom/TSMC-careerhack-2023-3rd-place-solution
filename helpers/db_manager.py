@@ -175,6 +175,7 @@ async def update_remind_time(server_id: int, vote_name: str, remind_at: str) -> 
     :param server_id: The ID of the server that should be checked.
     :return: A list of all the warnings of the user.
     """
+    print(remind_at)
     async with aiosqlite.connect(DATABASE_PATH) as db:
         await db.execute("UPDATE vote SET remind_at=? WHERE vote_name=? AND server_id=?", (remind_at, vote_name, server_id,))
         await db.commit()
@@ -191,6 +192,7 @@ async def get_remind_user(remind_at: str) -> list:
     :param server_id: The ID of the server that should be checked.
     :return: A list of all the warnings of the user.
     """
+    print(remind_at)
     async with aiosqlite.connect(DATABASE_PATH) as db:
         rows = await db.execute("SELECT user_id, vote_name, server_id FROM vote WHERE remind_at=?", (remind_at,))
         async with rows as cursor:
