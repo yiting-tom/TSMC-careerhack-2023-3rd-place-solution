@@ -18,6 +18,14 @@ def get_all_tags() -> List[Tag]:
         .query()
     return tags
 
+
+def get_tag_id_by_map_id(tag_id: int) -> List[Tag]:
+    tags = Querier("tag")\
+        .filter_by("tag_id", "in", tag_id)\
+        .query()
+    
+    return tags
+
 def get_all_tags_ids() -> List[str]:
     tags = get_all_tags()
     return [tag.tag_id for tag in tags]

@@ -7,9 +7,9 @@ from dacite import from_dict
 @dataclass
 class User:
     user_id: str
-    email: str
     groups: List[str]
-
+    email: str=""
+    
     def from_dict(dic: dict):
         group_ids = []
         if "groups" in dic:

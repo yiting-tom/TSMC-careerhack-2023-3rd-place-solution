@@ -6,24 +6,32 @@ Description:
 Version: 5.5.0
 """
 
+from typing import List
 from discord.ext import commands
 from discord.ext.commands import Context
-from helpers import checks, db_manager
+from helpers import checks
 import discord
 from discord import ui
 from discord import app_commands
 from discord.ext.forms import Form, Validator, ReactionForm, ReactionMenu
 import math
-
-from adapters.share import get_all_shares, add_one_share, delete_one_share, get_shares_by_rules
-from adapters.user import get_all_users_ids, add_one_user
-from adapters.tag import get_all_tags_ids
-from models.share import Share, ShareToAdd
-from models.base import QueryRule
-from models.user import UserToAdd
+import models.share as share_model
+import adapters.share as share_adapter
 from utils.logger import L
 
 GUILD_ID = 1070985020841394197
+
+
+def expan_tags(tags: List[str]):
+    """Expand tags
+
+    Args:
+        tags (list): list of tags
+
+    Returns:
+        str: expanded tags
+    """
+    return ", ".join([f"`{t}`" for t in tags])
 
 
 class ButtonCheck(discord.ui.View):
@@ -63,9 +71,9 @@ class ShareAddModal(ui.Modal):
             max_length=255
         ))
 
-        self.tag = select_values[0]
+        self.tags = select_values  # list of tags(str)
 
-        if self.tag == "新增標籤":
+        if "新增標籤" in self.tags:
             self.add_item(ui.TextInput(
                 label="Tag",
                 placeholder="請輸入標籤",
@@ -79,9 +87,12 @@ class ShareAddModal(ui.Modal):
         description = self.children[1].value
         url = self.children[2].value
 
-        tag = self.children[3].value if self.tag == "新增標籤" else self.tag
+        if "新增標籤" in self.tags:
+            self.tags.append(self.children[3].value)  # add new tag to list
+            self.tags.remove("新增標籤")
+
         embed = discord.Embed(
-            title=f"✅ 成功分享到 #{tag}",
+            title=f"✅ 成功分享",
             color=0x819FF7,
         )
 
@@ -97,34 +108,17 @@ class ShareAddModal(ui.Modal):
         embed.add_field(
             name="Url", value=url, inline=False)
 
-        # await db_manager.add_share(
-        #     user_id=interaction.user.id,
-        #     server_id=interaction.guild.id,
-        #     title=title,
-        #     description=description,
-        #     url=url,
-        #     tag=tag
-        # )
+        embed.add_field(
+            name="Tags", value=expan_tags(self.tags), inline=False)
 
-        ##########################################
-        # if user not in db then add user
-        if interaction.user.id not in get_all_users_ids():
-            add_one_user(UserToAdd(
-                user_id=str(interaction.user.id),
-                email="",
-            ))
-
-        # add share
-        resp = add_one_share(ShareToAdd(
-            user_id=str(interaction.user.id),
+        share_adapter.add_share(
+            user_id=interaction.user.id,
             server_id=interaction.guild.id,
             title=title,
             description=description,
             url=url,
-            tags=[tag] if not isinstance(tag, list) else tag,
-        ))
-        L.info(resp)
-        ##########################################
+            tags=self.tags
+        )
 
         await interaction.response.edit_message(embed=embed, view=None)
 
@@ -175,10 +169,8 @@ class Share(commands.Cog, name="share", description="Share your content!"):
             return
 
         view = ui.View()
-        # exist_tags = await db_manager.get_share_tags(server_id=context.guild.id)
-        ##########################################
-        exist_tags = get_all_tags_ids()
-        ##########################################
+        exist_tags = share_adapter.get_share_tags_by_server_id(
+            server_id=context.guild.id)
         options_dict = {
             "新增標籤": "新增標籤",
         }
@@ -190,7 +182,9 @@ class Share(commands.Cog, name="share", description="Share your content!"):
             options=[
                 discord.SelectOption(label=label, value=value)
                 for label, value in options_dict.items()
-            ]
+            ],
+            min_values=1,
+            max_values=max(len(exist_tags), 1),
         )
 
         async def callback(interaction: discord.Interaction):
@@ -211,16 +205,14 @@ class Share(commands.Cog, name="share", description="Share your content!"):
     )
     @checks.not_blacklisted()
     @app_commands.guilds(discord.Object(id=GUILD_ID))
-    async def list(self, context: Context):
+    async def list(self, context: Context, query:str=None):
 
         if context.guild is None:
             await context.send("This command can only be used in a server.")
             return
 
-        # exist_tags = await db_manager.get_share_tags(server_id=context.guild.id)
-        ##########################################
-        exist_tags = get_all_tags_ids()
-        ##########################################
+        exist_tags = share_adapter.get_share_tags_by_server_id(
+            server_id=context.guild.id)
 
         if len(exist_tags) == 0:
             await context.send("目前沒有任何分享。")
@@ -234,24 +226,25 @@ class Share(commands.Cog, name="share", description="Share your content!"):
         view = ui.View()
         select_ui = ui.Select(
             placeholder="請選擇標籤",
-            options=options
+            options=options,
+            min_values=1,
+            max_values=max(1, len(options)),
         )
 
         async def callback(interaction: discord.Interaction):
 
-            await interaction.response.edit_message( content="以下是大家分享的內容" ,embed=None, view=None)
+            await interaction.response.edit_message(content="以下是大家分享的內容", embed=None, view=None)
 
-            shares = await db_manager.get_shares_by_tag(
-                server_id=context.guild.id,
-                tag=select_ui.values[0]
+            shares = share_adapter.get_shares_by_tags(
+                tags=select_ui.values,
             )
-            ##########################################
-            shares = get_shares_by_rules([
-                QueryRule("server_id", "eq", str(context.guild.id)),
-                QueryRule("tags", "in", select_ui.values[0]),
-            ])
-            ##########################################
 
+            shares = [s for s in shares if s["server"]
+                      == str(context.guild.id)]
+
+            if query is not None:
+                shares = [s for s in shares if query in s["title"] or query in s["description"]]
+                
             embed_per_page = 5
 
             if len(shares) > embed_per_page:
@@ -310,14 +303,16 @@ class Share(commands.Cog, name="share", description="Share your content!"):
             return
 
         # shares is a list of dict, each dict has 4 keys: title, description, url, tag
-        shares = await db_manager.check_shares(user_id=context.author.id,
-                                               server_id=context.guild.id)
+        shares = share_adapter.get_shares_by(
+            column="user", keys=[str(context.author.id)])
+
+        shares = [s for s in shares if s["server"] == str(context.guild.id)]
 
         if len(shares) == 0:
             await context.send("你沒有分享過任何內容。")
             return
 
-        sorted_shares = sorted(shares, key=lambda x: x["tag"])
+        sorted_shares = sorted(shares, key=lambda x: x["share_id"])
 
         embed = discord.Embed(
             title="你分享過的內容",
@@ -325,9 +320,14 @@ class Share(commands.Cog, name="share", description="Share your content!"):
         )
 
         for item in sorted_shares:
+
+            item_tags = []
+            for t in item["tags"]:
+                item_tags.append(t["tag_tag_id"])
+
             embed.add_field(
                 name=f"📄 {item['title']}",
-                value=f"標籤: {item['tag']}\n內容: {item['description']}\n連結: {item['url']}",
+                value=f"標籤: {expan_tags(item_tags)}\n內容: {item['description']}\n連結: {item['url']}",
                 inline=False
             )
 
@@ -345,8 +345,10 @@ class Share(commands.Cog, name="share", description="Share your content!"):
             return
 
         # shares is a list of dict, each dict has 4 keys: title, description, url, tag
-        shares = await db_manager.check_shares(user_id=context.author.id,
-                                               server_id=context.guild.id)
+        shares = share_adapter.get_shares_by(
+            column="user", keys=[str(context.author.id)])
+
+        shares = [s for s in shares if s["server"] == str(context.guild.id)]
 
         if len(shares) == 0:
             await context.send("你沒有分享過任何內容。")
@@ -387,9 +389,8 @@ class Share(commands.Cog, name="share", description="Share your content!"):
             await double_check_ui.wait()
 
             if double_check_ui.value == "yes":
-                await db_manager.delete_shares_by_share_ids(user_id=context.author.id,
-                                                            server_id=context.guild.id,
-                                                            share_ids=share_ids_to_delete)
+                share_adapter.delete_shares_by_share_ids(
+                    share_ids=share_ids_to_delete)
 
                 await interaction.message.edit(content="刪除成功", view=None, embed=None)
             elif double_check_ui.value == "no":
