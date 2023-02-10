@@ -148,3 +148,6 @@ discord.log
 .config
 .vscode
 data
+
+config.json
+discord-ext-forms
