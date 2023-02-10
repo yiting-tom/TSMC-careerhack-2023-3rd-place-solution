@@ -1,11 +1,13 @@
 #%%
 from typing import List
 import requests
+from datetime import datetime
 
 from adapters.base import Querier, Creator, Deleter
 from adapters.user import get_users_by_id
 from models.dayoff import Dayoff, DayoffToAdd, DayoffToDelete
 from utils import dict_to_objects
+from models.base import QueryRule
 
 
 # @dict_to_objects(Dayoff)
@@ -82,47 +84,35 @@ def get_dayoff_between_datetime(from_datetime: str, to_datetime: str) -> List[Da
 
     return dayoffs
 
-def get_day_of_by_user(values: List[str]) -> List[Dayoff]:
-    """get_day_of_by_user
 
-    Args:
-        values (List[str]): A list of user_id
-
-    Returns:
-        List[Dayoff]: A list of dayoffs
-
-    Example:
-        >>> get_day_of_by_user("user1", "user2")
-        [
-            Dayoff(
-                dayoff_id=1,
-                user=User(
-                    user_id="user1",
-                    email="user1@mail",
-                    groups=["group1", "group2"]
-                ),
-                time='2023-02-09T22:07:13',
-            ),
-            Dayoff(
-                dayoff_id=2,
-                user=User(
-                    user_id="user2",
-                    email="user2@mail",
-                    groups=["group2", "group3"]
-                ),
-                time='2023-02-19T22:07:13',
-            ),
-        ]
-    """
+def get_dayoff_by_user_and_server(user_id: str, server_id: str):
     dayoffs = Querier("dayoff")\
-        .filter_by("[user][user_id]", "in", values)\
+        .filter_by("[user][user_id]", "eq", user_id)\
+        .filter_by("[server][server_id]", "eq", server_id)\
         .query()
+    
+    return [dayoff['time'] for dayoff in dayoffs]
 
-    for dayoff in dayoffs:
-        dayoff["user"] = get_users_by_id(dayoff["user"]["user_id"])[0]
-        dayoff["server"] = dayoff["server"]["server_id"]
-        
+def get_user_in_date(user_id: str, server_id: str, date: str):
+    dayoffs = Querier("dayoff")\
+        .filter_by("[user][user_id]", "eq", user_id)\
+        .filter_by("[server][server_id]", "eq", server_id)\
+        .filter_by("[time]", "eq", date)\
+        .query()
     return dayoffs
+
+def get_dayoff_after_today():
+    today = datetime.now()
+    next_month = today.replace(month=today.month+1)
+    dayoffs = Querier("dayoff")\
+        .filter_by("[time]", "between", [today.date().isoformat(), next_month.date().isoformat()])\
+        .drop_field("server")\
+        .query()
+    result = []
+    for dayoff in dayoffs:
+        result.append([dayoff["user"]["user_id"], dayoff["time"]])
+    return result
+
 
 def add_one_dayoff(dayoff: DayoffToAdd) -> Dayoff:
     """add_one_dayoff
@@ -162,4 +152,3 @@ def delete_one_dayoff(dayoff: DayoffToDelete) -> requests.Response:
     """
     delete_exists_dayoff = Deleter("dayoff")
     return delete_exists_dayoff(dayoff.dayoff_id)
-# %%

@@ -11,7 +11,7 @@ class Dayoff:
     description: Optional[str]
     time: datetime.timestamp
     server_id: str
-    discription: Optional[str]
+    description: Optional[str]
     def from_dict(dic: dict):
         return Dayoff(
             dayoff_id=dic['dayoff_id'],
@@ -23,21 +23,21 @@ class Dayoff:
 
 @dataclass
 class DayoffToAdd:
-    user_id: str
-    server_id: str
+    user: str
+    server: str
     time: datetime.timestamp
-    discription: Optional[str]
+    description: Optional[str]
 
     def __init__(self, 
         user_id: str, 
         server_id: str, 
         time: datetime.timestamp, 
-        discription: Optional[str]) -> None:
-
-        self.user_id = {"user":user_id} # user object to user_id
+        description: Optional[str]) -> None:
+        self.user = {"user_id":user_id} # user object to user_id
+        self.server = {"server_id": server_id}
         self.server_id = server_id
         self.time = time
-        self.discription = discription
+        self.description = description
 
 
 @dataclass
@@ -48,12 +48,12 @@ class DayoffToUpdate:
 
     def __init__(self, 
         time: Optional[datetime.timestamp], 
-        discription: Optional[str],
+        description: Optional[str],
         dayoff_id: int
         ) -> None:
 
         self.time = time
-        self.discription = discription
+        self.description = description
         self.dayoff_id = dayoff_id
 
 @dataclass
