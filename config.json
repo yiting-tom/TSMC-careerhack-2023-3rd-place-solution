@@ -1,11 +1,10 @@
 {
   "prefix": "!",
-  "token": "MTA3MDk5MjcyODMyMzgwMTE1OA.GJ01jf.cEHCitxHfSAa4txriTDAWqvQyTlmg-x7cSuyOg",
+  "token": "MTA3MDk5MjcyODMyMzgwMTE1OA.G0jCje.g3anl-sMjtg1ldI6tEKReX6pTbs6dZE3ha6VAE",
   "permissions": "8",
   "application_id": "1070992728323801158",
   "sync_commands_globally": false,
   "owners": [
-    408537090712928260,
-    987654321
+    408537090712928260
   ]
 }
