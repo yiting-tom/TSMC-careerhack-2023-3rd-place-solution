@@ -301,7 +301,7 @@ class Voting(commands.Cog, name="voting"):
                 await context.reply(f"Something wrong while setting the time. ValueError : Your input is {', '.join([x for x in time])}.", ephemeral=True)
                 return
         print(await update_remind_time(server_id=context.guild.id, vote_name=voting_type, remind_at=f'{remind_time.year}-{str(remind_time.month).zfill(2)}-{str(remind_time.day).zfill(2)} {str(remind_time.hour).zfill(2)}:{str(remind_time.minute).zfill(2)}'))
-        await context.reply(f"The end of the time of the voting event {voting_type} has been postponed. The end of the time of the voting event is {int(f'20{time[0][-2:]}')}-{int(time[1])}-{int(time[2])} {int(time[3])}:{int(time[4])}")
+        await context.reply(f"The end of the time of the voting event is set to {int(f'20{time[0][-2:]}')}-{int(time[1])}-{int(time[2])} {int(time[3])}:{int(time[4])}")
 
     @vote.command(
         name="end",
