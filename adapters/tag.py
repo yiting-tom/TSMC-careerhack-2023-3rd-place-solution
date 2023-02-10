@@ -18,6 +18,10 @@ def get_all_tags() -> List[Tag]:
         .query()
     return tags
 
+def get_all_tags_ids() -> List[str]:
+    tags = get_all_tags()
+    return [tag.tag_id for tag in tags]
+
 def get_all_tags_map() -> List[dict]:
     """get_all_tags_map
 

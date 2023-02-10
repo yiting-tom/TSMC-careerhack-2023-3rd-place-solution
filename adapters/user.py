@@ -31,6 +31,10 @@ def get_all_users() -> List[User]:
     users = Querier("user").query()
     return users
 
+def get_all_users_ids():
+    users = get_all_users()
+    return [user.user_id for user in users]
+
 @dict_to_objects(User)
 def get_users_by(column: str, keys: List[str]) -> List[User]:
     """get_users_by

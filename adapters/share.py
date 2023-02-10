@@ -9,6 +9,8 @@ from adapters.user import get_users_by_id
 from models.share import Share, ShareToAdd, ShareToDelete
 from models.tag import TagToAdd
 from utils import dict_to_objects
+from utils.logger import L
+from models.base import QueryRule
 
 
 @dict_to_objects(Share)
@@ -23,6 +25,7 @@ def get_all_shares() -> List[Share]:
         [
             Share(
                 share_id='share_id_1',
+                server_id='server_id_1',
                 title='share1 title',
                 description='share1 description',
                 user='share1 url',
@@ -37,8 +40,11 @@ def get_all_shares() -> List[Share]:
         ]
     """
     shares = Querier("share").query()
+
     for share in shares:
         share["user"] = get_users_by_id(share["user"]["user_id"])[0]
+        share["server"] = share["server"]["server_id"]
+
     return shares
 
 @dict_to_objects(Share)
@@ -57,6 +63,7 @@ def get_shares_by(column: str, keys: List[str]) -> List[Share]:
         [
             Share(
                 share_id='share_id_1',
+                server_id='server_id_1',
                 title='share1 title',
                 description='share1 description',
                 url='share1 url',
@@ -69,6 +76,7 @@ def get_shares_by(column: str, keys: List[str]) -> List[Share]:
             ),
             Share(
                 share_id='share_id_2',
+                server_id='server_id_1',
                 title='share2 title',
                 description='share2 description',
                 user='share2 url',
@@ -87,8 +95,25 @@ def get_shares_by(column: str, keys: List[str]) -> List[Share]:
 
     for share in shares:
         share["user"] = get_users_by_id(share["user"]["user_id"])[0]
+        share["server"] = share["server"]["server_id"]
 
     return shares
+
+@dict_to_objects(Share)
+def get_shares_by_rules(rules: List[QueryRule]) -> List[Share]:
+    share_querier = Querier("share")
+
+    for rule in rules:
+        share_querier = share_querier.filter_by(rule.column, rule.operator, rule.value)
+
+    shares = share_querier.query()
+
+    for share in shares:
+        share["user"] = get_users_by_id(share["user"]["user_id"])[0]
+        share["server"] = share["server"]["server_id"]
+
+    return shares
+
 
 @dict_to_objects(Share)
 def get_shares_by_tags(tags: List[str]) -> List[Share]:
@@ -105,6 +130,7 @@ def get_shares_by_tags(tags: List[str]) -> List[Share]:
         [
             Share(
                 share_id='share_id_1',
+                server_id='server_id_1',
                 title='share1 title',
                 description='share1 description',
                 url='share1 url',
@@ -117,6 +143,7 @@ def get_shares_by_tags(tags: List[str]) -> List[Share]:
             ),
             Share(
                 share_id='share_id_2',
+                server_id='server_id_1',
                 title='share2 title',
                 description='share2 description',
                 user='share2 url',
@@ -135,8 +162,11 @@ def get_shares_by_tags(tags: List[str]) -> List[Share]:
             operator="in",
             values=tags)\
         .query()
+        
     for share in shares:
         share["user"] = get_users_by_id(share["user"]["user_id"])[0]
+        share["server"] = share["server"]["server_id"]
+
     return shares
 
 def add_one_share(share: ShareToAdd) -> requests.Response:
@@ -157,6 +187,7 @@ def add_one_share(share: ShareToAdd) -> requests.Response:
     Example:
         >>> add_one_share(ShareToAdd(
                 title='share1 title',
+                user_id='user_id_1',
                 description='share1 description',
                 url='share1 url',
                 user="user_id_1",
@@ -189,3 +220,5 @@ def delete_one_share(share: ShareToDelete) -> requests.Response:
     """
     delete_one_share = Deleter("share")
     return delete_one_share(share.share_id)
+
+# %%

@@ -12,24 +12,6 @@ CREATE TABLE IF NOT EXISTS `warns` (
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS `shares` (
-  `share_id` INTEGER PRIMARY KEY AUTOINCREMENT,
-  `user_id` varchar(20) NOT NULL,
-  `server_id` varchar(20) NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `description` varchar(255) NOT NULL,
-  `url` varchar(255),
-  `tag` varchar(20) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS `dayoff` (
-  `user_id` varchar(20) NOT NULL,
-  `server_id` varchar(20) NOT NULL,
-  `time` varchar(20) NOT NULL,
-  `description` varchar(255) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
 CREATE TABLE IF NOT EXISTS `vote` (
   `server_id` varchar(20) NOT NULL,
   `user_id` varchar(20) NOT NULL,

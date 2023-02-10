@@ -8,15 +8,15 @@ from utils.logger import L
 FIELD_MAPPING = {
     "user": {"user_id", "email", "groups.*"},
     "group": {"group_id"},
-    "share": {"share_id", "user.*", "title", "description", "url", "tags.*"},
+    "share": {"share_id", "server.*", "user.*", "title", "description", "url", "tags.*"},
     "tag": {"tag_id"},
-    "dayoff": {"dayoff_id", "time", "user.*"},
+    "dayoff": {"dayoff_id", "time", "user.*", "server.*"},
 }
-
+API_URL = "http://140.116.245.105:33332"
 class Request:
     def __init__(self, resource):
         self._resource = resource
-        self._url = f"http://140.116.245.105:33332/items/{resource}"
+        self._url = f"{API_URL}/items/{resource}"
         self._params = {"fields[]": ""}
         self._fields = FIELD_MAPPING[resource].copy()
 
@@ -42,6 +42,10 @@ class Querier(Request):
     def filter_by(self, field: str, operator: str, values: str):
         key = f"filter{field}[_{operator}]"
         self._params[key] = values if not isinstance(values, list) else ",".join(values)
+        return self
+    
+    def fields(self, key: str, val: str):
+        self._params[key] = val
         return self
 
 class Creator(Request):

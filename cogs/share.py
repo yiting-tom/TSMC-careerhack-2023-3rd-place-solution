@@ -15,6 +15,14 @@ from discord import app_commands
 from discord.ext.forms import Form, Validator, ReactionForm, ReactionMenu
 import math
 
+from adapters.share import get_all_shares, add_one_share, delete_one_share, get_shares_by_rules
+from adapters.user import get_all_users_ids, add_one_user
+from adapters.tag import get_all_tags_ids
+from models.share import Share, ShareToAdd
+from models.base import QueryRule
+from models.user import UserToAdd
+from utils.logger import L
+
 GUILD_ID = 1070985020841394197
 
 
@@ -89,14 +97,34 @@ class ShareAddModal(ui.Modal):
         embed.add_field(
             name="Url", value=url, inline=False)
 
-        await db_manager.add_share(
-            user_id=interaction.user.id,
+        # await db_manager.add_share(
+        #     user_id=interaction.user.id,
+        #     server_id=interaction.guild.id,
+        #     title=title,
+        #     description=description,
+        #     url=url,
+        #     tag=tag
+        # )
+
+        ##########################################
+        # if user not in db then add user
+        if interaction.user.id not in get_all_users_ids():
+            add_one_user(UserToAdd(
+                user_id=str(interaction.user.id),
+                email="",
+            ))
+
+        # add share
+        resp = add_one_share(ShareToAdd(
+            user_id=str(interaction.user.id),
             server_id=interaction.guild.id,
             title=title,
             description=description,
             url=url,
-            tag=tag
-        )
+            tags=[tag] if not isinstance(tag, list) else tag,
+        ))
+        L.info(resp)
+        ##########################################
 
         await interaction.response.edit_message(embed=embed, view=None)
 
@@ -147,7 +175,10 @@ class Share(commands.Cog, name="share", description="Share your content!"):
             return
 
         view = ui.View()
-        exist_tags = await db_manager.get_share_tags(server_id=context.guild.id)
+        # exist_tags = await db_manager.get_share_tags(server_id=context.guild.id)
+        ##########################################
+        exist_tags = get_all_tags_ids()
+        ##########################################
         options_dict = {
             "新增標籤": "新增標籤",
         }
@@ -186,7 +217,10 @@ class Share(commands.Cog, name="share", description="Share your content!"):
             await context.send("This command can only be used in a server.")
             return
 
-        exist_tags = await db_manager.get_share_tags(server_id=context.guild.id)
+        # exist_tags = await db_manager.get_share_tags(server_id=context.guild.id)
+        ##########################################
+        exist_tags = get_all_tags_ids()
+        ##########################################
 
         if len(exist_tags) == 0:
             await context.send("目前沒有任何分享。")
@@ -211,6 +245,12 @@ class Share(commands.Cog, name="share", description="Share your content!"):
                 server_id=context.guild.id,
                 tag=select_ui.values[0]
             )
+            ##########################################
+            shares = get_shares_by_rules([
+                QueryRule("server_id", "eq", str(context.guild.id)),
+                QueryRule("tags", "in", select_ui.values[0]),
+            ])
+            ##########################################
 
             embed_per_page = 5
 

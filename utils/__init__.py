@@ -6,8 +6,6 @@ def dict_to_objects(cls: dataclass):
         def batch_dict_to_objects(dicts):
             if isinstance(dicts, dict):
                 return cls.from_dict(dicts)
-            if cls == Share:
-                print('\n'*3, dicts)
 
             return [
                 cls.from_dict(dic)

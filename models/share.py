@@ -7,6 +7,7 @@ from models.user import User
 @dataclass
 class Share:
     share_id: int
+    server: str
     user: User
     title: str
     description: Optional[str] = None
@@ -24,20 +25,23 @@ class Share:
 
 @dataclass
 class ShareToAdd:
-    user: str
+    user: User
+    server_id: str
     title: str
     description: Optional[str] = None
     url: Optional[str] = None
     tags: List[str] = None
     def __init__(
         self,
-        user: str,
+        user_id: str,
+        server_id: str,
         title: str,
         description: Optional[str] = None,
         url: Optional[str] = None,
         tags: Optional[List[str]] = None
     ):
-        self.user = {"user_id": user}
+        self.user = {"user_id": user_id}
+        self.server_id = server_id
         self.title = title
         self.description = description
         self.url = url
