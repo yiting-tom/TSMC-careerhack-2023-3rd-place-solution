@@ -147,3 +147,4 @@ cython_debug/
 discord.log
 discord-ext-forms
 data
+config.json
