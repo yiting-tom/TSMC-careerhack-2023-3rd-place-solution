@@ -166,7 +166,7 @@ class Voting(commands.Cog, name="voting"):
                         user_id=user_id,
                         vote_name=voting_type,
                         remind_at=f'{remind_time.year}-{str(remind_time.month).zfill(2)}-{str(remind_time.day).zfill(2)} {str(remind_time.hour).zfill(2)}:{str(remind_time.minute).zfill(2)}')
-        await context.send(f'Create a voting event : {voting_type} (the event will end at : {self.voting_config[voting_type][-1]})')
+        await context.send(f'🥳 Create a voting event: **{voting_type}** (the event will end at: **{self.voting_config[voting_type][-1]}**)')
 
     @vote.command(
         name="list",
