@@ -136,7 +136,7 @@ class Attend(commands.Cog, name="attend"):
                     "`add` - Take a day off.\n"
                     "`cancel` - Cancel one or more days off.\n"
                     "`today` - List the attendance today.",
-                )
+                ),
                 color=0xE02B2B
             )
             await context.send(embed=embed)
