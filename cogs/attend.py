@@ -13,7 +13,7 @@ from discord.ext import tasks, commands
 from discord.ext.commands import Context
 from discord import ui
 
-from adapters.dayoff import get_user_in_date, add_one_dayoff, get_dayoff_after_today, get_dayoff_by_user_and_server
+from adapters.dayoff import get_user_in_date, add_one_dayoff, get_dayoff_after_today, get_dayoff_by_user_and_server, delete_dayoff, get_user_by_server_and_date
 from helpers import checks
 
 from models.dayoff import DayoffToAdd
@@ -180,7 +180,7 @@ class Attend(commands.Cog, name="attend"):
         Lets you take a day off.
 
         :param context: The hybrid command context.
-        :param user: The user that should be added to the day-off list.
+        :param user: The user want to request a day off.
         """
         if context.guild is None:
             await context.send("This function can only be used in a server.")
@@ -196,10 +196,10 @@ class Attend(commands.Cog, name="attend"):
     @checks.not_blacklisted()
     async def dayoff_cancel(self, context: Context) -> None:
         """
-        Lets you cancel the days-odd from day-off list.
+        Lets you cancel the days-off from day-off list.
 
         :param context: The hybrid command context.
-        :param user: The user that should be removed from the blacklist.
+        :param user: The user that want to cancel day off.
         """
         if context.guild is None:
             await context.send("This function can only be used in a server.")
@@ -261,11 +261,11 @@ class Attend(commands.Cog, name="attend"):
             await double_check_ui.wait()
 
             if double_check_ui.value == "yes":
-                await db_manager.remove_user_from_dayoff(
+                delete_dayoff(
                     user_id=context.author.id,
                     server_id=context.guild.id,
                     date=date
-                    )
+                )
                 await interaction.message.edit(content="刪除成功", view=None, embed=embed)
             elif double_check_ui.value == "no":
                 await interaction.message.edit(content="取消刪除", view=None, embed=embed)
@@ -284,8 +284,14 @@ class Attend(commands.Cog, name="attend"):
     )
     @checks.not_blacklisted()
     async def today(self, context: Context) -> None:
+        """
+        Show the all days-off today.
+
+        :param context: The hybrid command context.
+        :param user: The user that want to display day off today.
+        """
         today = datetime.now().strftime("%Y-%m-%d")
-        dayoff_users = await db_manager.get_today_dayoff_users(server_id=context.guild.id, date=today)
+        dayoff_users = get_user_by_server_and_date(server_id=context.guild.id, date=today)
 
         if len(dayoff_users) == 0:
             embed = discord.Embed(
