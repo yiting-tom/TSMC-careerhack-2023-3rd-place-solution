@@ -2,7 +2,6 @@
 Copyright © Krypton 2019-2023 - https://github.com/kkrypt0nn (https://krypton.ninja)
 Description:
 🐍 A simple template to start to code your own and personalized discord bot in Python programming language.
-
 Version: 5.5.0
 """
 
@@ -30,12 +29,14 @@ class Template(commands.Cog, name="template"):
     async def testcommand(self, context: Context):
         """
         This is a testing command that does nothing.
-
         :param context: The application command context.
         """
         # Do your stuff here
 
         # Don't forget to remove "pass", I added this just because there's no content in the method.
+        from adapters import user
+        for user in user.get_user_by_id(123):
+            print(user)
         pass
 
 
