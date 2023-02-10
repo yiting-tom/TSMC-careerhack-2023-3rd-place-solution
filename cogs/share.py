@@ -208,14 +208,14 @@ class Share(commands.Cog, name="share", description="Share your content!"):
     async def list(self, context: Context, query:str=None):
 
         if context.guild is None:
-            await context.send("This command can only be used in a server.")
+            await context.send("This command can only be used in a server.", ephemeral=True)
             return
 
         exist_tags = share_adapter.get_share_tags_by_server_id(
             server_id=context.guild.id)
 
         if len(exist_tags) == 0:
-            await context.send("目前沒有任何分享。")
+            await context.send("目前沒有任何分享。", ephemeral=True)
             return
 
         options = [
@@ -283,12 +283,12 @@ class Share(commands.Cog, name="share", description="Share your content!"):
                         inline=False
                     )
 
-                await context.send(embed=embed)
+                await context.send(embed=embed, ephemeral=True)
 
         select_ui.callback = callback
         view.add_item(select_ui)
 
-        await context.send(view=view)
+        await context.send(view=view,ephemeral=True )
 
     @share.command(
         name="myshares",
@@ -309,7 +309,7 @@ class Share(commands.Cog, name="share", description="Share your content!"):
         shares = [s for s in shares if s["server"] == str(context.guild.id)]
 
         if len(shares) == 0:
-            await context.send("你沒有分享過任何內容。")
+            await context.send("你沒有分享過任何內容。", ephemeral=True)
             return
 
         sorted_shares = sorted(shares, key=lambda x: x["share_id"])
@@ -331,7 +331,7 @@ class Share(commands.Cog, name="share", description="Share your content!"):
                 inline=False
             )
 
-        await context.send(embed=embed)
+        await context.send(embed=embed, ephemeral=True)
 
     @share.command(
         name="delete",
@@ -351,7 +351,7 @@ class Share(commands.Cog, name="share", description="Share your content!"):
         shares = [s for s in shares if s["server"] == str(context.guild.id)]
 
         if len(shares) == 0:
-            await context.send("你沒有分享過任何內容。")
+            await context.send("你沒有分享過任何內容。", ephemeral=True)
             return
 
         options = [
@@ -401,7 +401,7 @@ class Share(commands.Cog, name="share", description="Share your content!"):
         select_ui.callback = callback
         view.add_item(select_ui)
 
-        await context.send(view=view)
+        await context.send(view=view, ephemeral=True)
 
 
 async def setup(bot):
