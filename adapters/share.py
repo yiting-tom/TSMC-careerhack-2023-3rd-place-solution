@@ -40,8 +40,11 @@ def get_all_shares() -> List[Share]:
         ]
     """
     shares = Querier("share").query()
+
     for share in shares:
         share["user"] = get_users_by_id(share["user"]["user_id"])[0]
+        share["server"] = share["server"]["server_id"]
+
     return shares
 
 @dict_to_objects(Share)
@@ -92,6 +95,7 @@ def get_shares_by(column: str, keys: List[str]) -> List[Share]:
 
     for share in shares:
         share["user"] = get_users_by_id(share["user"]["user_id"])[0]
+        share["server"] = share["server"]["server_id"]
 
     return shares
 
@@ -106,6 +110,7 @@ def get_shares_by_rules(rules: List[QueryRule]) -> List[Share]:
 
     for share in shares:
         share["user"] = get_users_by_id(share["user"]["user_id"])[0]
+        share["server"] = share["server"]["server_id"]
 
     return shares
 
@@ -157,8 +162,11 @@ def get_shares_by_tags(tags: List[str]) -> List[Share]:
             operator="in",
             values=tags)\
         .query()
+        
     for share in shares:
         share["user"] = get_users_by_id(share["user"]["user_id"])[0]
+        share["server"] = share["server"]["server_id"]
+
     return shares
 
 def add_one_share(share: ShareToAdd) -> requests.Response:
@@ -212,3 +220,5 @@ def delete_one_share(share: ShareToDelete) -> requests.Response:
     """
     delete_one_share = Deleter("share")
     return delete_one_share(share.share_id)
+
+# %%

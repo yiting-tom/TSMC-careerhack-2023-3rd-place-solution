@@ -8,7 +8,7 @@ from models.dayoff import Dayoff, DayoffToAdd, DayoffToDelete
 from utils import dict_to_objects
 
 
-@dict_to_objects(Dayoff)
+# @dict_to_objects(Dayoff)
 def get_all_dayoffs() -> List[Dayoff]:
     """get_all_dayoffs
 
@@ -31,10 +31,13 @@ def get_all_dayoffs() -> List[Dayoff]:
     """
     dayoffs = Querier("dayoff")\
         .query()
-
+        
     for dayoff in dayoffs:
         dayoff["user"] = get_users_by_id(dayoff["user"]["user_id"])[0]
+        dayoff["server"] = dayoff["server"]["server_id"]
+
     return dayoffs
+    
 
 @dict_to_objects(Dayoff)
 def get_dayoff_between_datetime(from_datetime: str, to_datetime: str) -> List[Dayoff]:
@@ -75,6 +78,8 @@ def get_dayoff_between_datetime(from_datetime: str, to_datetime: str) -> List[Da
 
     for dayoff in dayoffs:
         dayoff["user"] = get_users_by_id(dayoff["user"]["user_id"])[0]
+        dayoff["server"] = dayoff["server"]["server_id"]
+
     return dayoffs
 
 def get_day_of_by_user(values: List[str]) -> List[Dayoff]:
@@ -115,6 +120,8 @@ def get_day_of_by_user(values: List[str]) -> List[Dayoff]:
 
     for dayoff in dayoffs:
         dayoff["user"] = get_users_by_id(dayoff["user"]["user_id"])[0]
+        dayoff["server"] = dayoff["server"]["server_id"]
+        
     return dayoffs
 
 def add_one_dayoff(dayoff: DayoffToAdd) -> Dayoff:
@@ -155,3 +162,4 @@ def delete_one_dayoff(dayoff: DayoffToDelete) -> requests.Response:
     """
     delete_exists_dayoff = Deleter("dayoff")
     return delete_exists_dayoff(dayoff.dayoff_id)
+# %%
