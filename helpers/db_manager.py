@@ -121,7 +121,6 @@ async def get_warnings(user_id: int, server_id: int) -> list:
                 result_list.append(row)
             return result_list
 
-
 async def add_vote(server_id: int, user_id: int, vote_name: str, remind_at: str) -> list:
     """
     This function will add a voting event to the database.
@@ -153,7 +152,6 @@ async def delete_expire_event(remind_at: str) -> list:
         rows = await db.execute("SELECT user_id FROM vote WHERE remind_at=?", (remind_at,))
         async with rows as cursor:
             result = await cursor.fetchall()
-            print(len(result))
             return [x for x in result] or []
 
 async def delete_vote_user(server_id: int, user_id: str, vote_name: str) -> None:
@@ -212,4 +210,3 @@ async def vote_record(vote_type: str, first_place: str, second_place: str) -> li
     async with aiosqlite.connect(DATABASE_PATH) as db:
         await db.execute("INSERT INTO vote_record(vote_type, first_place, second_place) VALUES (?, ?, ?)", (vote_type, first_place, second_place))
         await db.commit()
-        print(f'vote : {vote_type} first_place : {first_place} second_place : {second_place}')
