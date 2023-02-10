@@ -2,7 +2,7 @@
 from typing import List, Optional
 import requests
 
-from adapters.base import Querier, Creator, Deleter
+from adapters.base import Querier, Creator, Deleter, API_URL
 from adapters.user import get_users_by_id, add_one_user
 from models.todo import Todo, TodoToAdd, TodoToDelete
 from models.user import User, UserToAdd, UserToDelete, UserToUpdate
@@ -45,6 +45,25 @@ def delete_one_todo(todo: TodoToDelete):
 
     delete_one_todo = Deleter("todo")
     return delete_one_todo(todo.todo_id)
+
+
+def delete_todo_by_ids(todo_ids: List[int]):
+    """ Delete a todo from the database."""
+
+    for todo_id in todo_ids:
+        delete_one_todo = Deleter("todo")
+        delete_one_todo(todo_id)
+
+def get_todos(user_id: str) -> List[Todo]:
+    """ Get user's all todos from the database."""
+
+    user_id = str(user_id) 
+
+    api = f"{API_URL}/items/todo?filter[user][_eq]={user_id}"
+
+    todos = requests.get(api).json()["data"]
+
+    return todos
 
 # %%
 
