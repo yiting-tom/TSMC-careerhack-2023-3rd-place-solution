@@ -111,7 +111,6 @@ class Voting(commands.Cog, name="voting"):
         )
         await context.reply(f"These are the option of {voting_type}.", embed=embed, view=view)
 
-
     @vote.command(
         name="add",
         description="Creating a voting event.",
