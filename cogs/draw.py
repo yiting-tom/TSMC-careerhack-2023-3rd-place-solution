@@ -95,15 +95,15 @@ class Draw(commands.Cog, name="draw"):
             embed = discord.Embed(
                 description="Please specify a subcommand.\n \
                     ** Subcommands **\n \
-                    `add` 新增一個抽獎，點選表情來參加\n \
-                    `all` 對群組內的所有人抽獎\n",
+                    `add` 指定頻道新增一個抽獎，成員可以點選表情來參加\n \
+                    `all` 讓指定頻道內的所有人抽獎\n",
                 color=0xE02B2B
             )
             await context.send(embed=embed)
 
     @draw.command(
         name="add",
-        description="新增一個抽獎，點選表情來參加",
+        description="指定頻道新增一個抽獎，成員可以點選表情來參加",
     )
     @checks.not_blacklisted()
     async def draw_add(self, context: Context):
@@ -176,68 +176,70 @@ class Draw(commands.Cog, name="draw"):
 
         await msg.clear_reactions()
 
-    @draw.command(
-        name="reset",
-        description="test draw remove...",
-    )
-    @checks.not_blacklisted()
-    async def draw_reset(self, context: Context):
-        # Let's make our embed here...
-        embed = discord.Embed(title="Reaction Menu Test",
-                              description="Delete 5 messages?")
-        # And send it! But we want to capture it as a variable!
-        message = await context.send(embed=embed)
-        # Initialize the reaction form...
-        form = ReactionForm(message, self.bot, context.author)
+    # @draw.command(
+    #     name="reset",
+    #     description="test draw remove...",
+    # )
+    # @checks.not_blacklisted()
+    # async def draw_reset(self, context: Context):
+    #     # Let's make our embed here...
+    #     embed = discord.Embed(title="Reaction Menu Test",
+    #                           description="Delete 5 messages?")
+    #     # And send it! But we want to capture it as a variable!
+    #     message = await context.send(embed=embed)
+    #     # Initialize the reaction form...
+    #     form = ReactionForm(message, self.bot, context.author)
 
-        form.set_timeout(10)  # Set the timeout to 60 seconds.
+    #     form.set_timeout(10)  # Set the timeout to 60 seconds.
 
-        form.add_reaction("✅", 1)  # Add the ✅ reaction which will return 1.
-        form.add_reaction("❌", 2)  # Add the ❌ reaction which will return 2.
-        form.add_reaction("🤷", 3)  # Add the 🤷 reaction which will return 3.
+    #     form.add_reaction("✅", 1)  # Add the ✅ reaction which will return 1.
+    #     form.add_reaction("❌", 2)  # Add the ❌ reaction which will return 2.
+    #     form.add_reaction("🤷", 3)  # Add the 🤷 reaction which will return 3.
 
-        # Start the form! Choice will be True or False based on the input.
-        choice = await form.start()
+    #     # Start the form! Choice will be True or False based on the input.
+    #     choice = await form.start()
 
-        await context.send(f"You chose {choice}!")  # Send the choice!
+    #     await context.send(f"You chose {choice}!")  # Send the choice!
 
-    @draw.command(
-        name="menu",
-        description="test draw remove...",
-    )
-    @checks.not_blacklisted()
-    async def draw_menu(self, ctx):
+    # @draw.command(
+    #     name="menu",
+    #     description="test draw remove...",
+    # )
+    # @checks.not_blacklisted()
+    # async def draw_menu(self, ctx):
 
-        jokes = ["有時候也很佩服自己，明明薪水這麼少，卻能把自己養這麼胖。", "母雞向母牛抱怨：「真受不了人類，他們每天用盡方法避孕，卻讓我們下蛋！」母牛回答：「那算什麼！他們每天喝我的奶，卻沒人叫我一聲媽咪。」",
-                 "媽媽指著食人魚跟女兒說：「女兒，你看，這是會吃人的魚。」而食人魚媽媽則跟食人魚女兒說：「女兒，你看，這是會吃魚的人。」", "你知道天上的星星一顆有多重嗎？ 答案就是八公克．．．．．．．．．．．因為 星巴克！", "朋友問我說情人節我還是一個人嗎？廢話！難道我會變成一條狗嗎？"]
+    #     jokes = ["有時候也很佩服自己，明明薪水這麼少，卻能把自己養這麼胖。", "母雞向母牛抱怨：「真受不了人類，他們每天用盡方法避孕，卻讓我們下蛋！」母牛回答：「那算什麼！他們每天喝我的奶，卻沒人叫我一聲媽咪。」",
+    #              "媽媽指著食人魚跟女兒說：「女兒，你看，這是會吃人的魚。」而食人魚媽媽則跟食人魚女兒說：「女兒，你看，這是會吃魚的人。」", "你知道天上的星星一顆有多重嗎？ 答案就是八公克．．．．．．．．．．．因為 星巴克！", "朋友問我說情人節我還是一個人嗎？廢話！難道我會變成一條狗嗎？"]
 
-        embed_list = [
-            discord.Embed(title=f"Joke {i+1}", description=j, color=0x00ff00) for i, j in enumerate(jokes)
-        ]
+    #     embed_list = [
+    #         discord.Embed(title=f"Joke {i+1}", description=j, color=0x00ff00) for i, j in enumerate(jokes)
+    #     ]
 
-        rmenu = ReactionMenu(ctx, embed_list)
-        await rmenu.start()
+    #     rmenu = ReactionMenu(ctx, embed_list)
+    #     await rmenu.start()
 
     @draw.command(
         name="all",
-        description="對群組內的所有人抽獎",
+        description="讓指定頻道內的所有人抽獎",
     )
     @checks.not_blacklisted()
     async def draw_all(self, context: Context):
         """ Get all members and start draw """
 
         form = Form(context, '⭐ 抽獎 ⭐', cleanup=False)
+        form.add_question('你想要在哪個頻道開始抽獎?', 'channel',
+                          qtype=Validator('channel'))
         form.add_question('請輸入獎項', 'prize', to_str)
         form.add_question('請問要抽出幾個獎項?', 'number', to_int)
 
         result = await form.start()
 
         guild = context.guild
-        members = [m for m in guild.members if m.bot == False]
+        members = [m for m in result.channel.members if m.bot == False]
 
         winners = random.sample(members, result.number)
 
-        await context.channel.send(f"恭喜 {', '.join([user.mention for user in winners])} 獲得 {result.prize}")
+        await result.channel.send(f"恭喜 {', '.join([user.mention for user in winners])} 獲得 {result.prize}")
 
 
 # And then we finally add the cog to the bot so that it can load, unload, reload and use it's content.
