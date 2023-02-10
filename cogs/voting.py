@@ -58,6 +58,7 @@ class Voting(commands.Cog, name="voting"):
                 "`add_option` - Add some options to a vote event.\n" + \
                 "`del_option` - Delete some options from a vote event.\n" + \
                 "`set_time` - Set the end time of a voting event.\n" + \
+                "`max_vote` - Set the max vote each person can vote for a voting event.\n" + \
                 "`end` - Get the end time of a voting event.",
                 color=0xE02B2B
             )
@@ -324,7 +325,7 @@ class Voting(commands.Cog, name="voting"):
         self.remind.start()
         self.calculate_voting_result.start()
 
-    @tasks.loop(seconds = 5.0)
+    @tasks.loop(minutes = 1.0)
     async def remind(self):
         remind_time = datetime.datetime.now()
         print(remind_time)
