@@ -6,11 +6,12 @@ from utils.logger import L
 
 
 FIELD_MAPPING = {
-    "user": {"user_id", "email", "groups.*"},
+    "user": {"user_id", "email", "groups.*", "todo_time"},
     "group": {"group_id"},
     "share": {"share_id", "server.*", "user.*", "title", "description", "url", "tags.*"},
     "tag": {"tag_id"},
     "dayoff": {"dayoff_id", "time", "user.*", "server.*"},
+    "todo": {"todo_id", "user.*", "subject", "description"}
 }
 API_URL = "http://140.116.245.105:33332"
 class Request:
