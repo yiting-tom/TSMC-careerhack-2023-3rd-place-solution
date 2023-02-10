@@ -129,14 +129,12 @@ class Attend(commands.Cog, name="attend"):
         """
         if context.invoked_subcommand is None:
             embed = discord.Embed(
-                description=(
-                    "You need to specify a subcommand.\n\n"+
+                description="You need to specify a subcommand.\n\n"+
                     "**Subcommands:**\n"+
                     "`list` - List all days off applied by the server members.\n"+
                     "`add` - Take a day off.\n"+
                     "`cancel` - Cancel one or more days off.\n"+
                     "`today` - List the attendance today.",
-                ),
                 color=0xE02B2B
             )
             await context.send(embed=embed)
