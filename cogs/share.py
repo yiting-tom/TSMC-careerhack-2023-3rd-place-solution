@@ -39,12 +39,12 @@ class ButtonCheck(discord.ui.View):
         super().__init__()
         self.value = None
 
-    @discord.ui.button(label="⭕", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="✅", style=discord.ButtonStyle.secondary)
     async def confirm(self, button: discord.ui.Button, interaction: discord.Interaction):
         self.value = "yes"
         self.stop()
 
-    @discord.ui.button(label="❌", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="❌", style=discord.ButtonStyle.secondary)
     async def cancel(self, button: discord.ui.Button, interaction: discord.Interaction):
         self.value = "no"
         self.stop()
@@ -145,10 +145,10 @@ class Share(commands.Cog, name="share", description="Share your content!"):
             description =  \
                 "Please specify a subcommand.\n\n \
                 ** Subcommands **\n\n \
-                `add` - Adds a share\n\n \
-                `list` - List shares\n\n \
-                `myshares` - Checks your shares\n\n \
-                `delete` - Deletes a share\n\n"
+                `add` - 新增分享\n\n \
+                `list` - 列出分享清單\n\n \
+                `myshares` - 查看你分享過的內容\n\n \
+                `delete` - 刪除你分享過的內容\n\n"
 
             embed = discord.Embed(
                 description=description,
@@ -158,7 +158,7 @@ class Share(commands.Cog, name="share", description="Share your content!"):
 
     @share.command(
         name="add",
-        description="Adds a share",
+        description="新增分享",
     )
     @checks.not_blacklisted()
     @app_commands.guilds(discord.Object(id=GUILD_ID))
@@ -201,11 +201,11 @@ class Share(commands.Cog, name="share", description="Share your content!"):
 
     @share.command(
         name="list",
-        description="List shares",
+        description="列出分享清單",
     )
     @checks.not_blacklisted()
     @app_commands.guilds(discord.Object(id=GUILD_ID))
-    async def list(self, context: Context, query:str=None):
+    async def list(self, context: Context, query: str = None):
 
         if context.guild is None:
             await context.send("This command can only be used in a server.", ephemeral=True)
@@ -243,8 +243,9 @@ class Share(commands.Cog, name="share", description="Share your content!"):
                       == str(context.guild.id)]
 
             if query is not None:
-                shares = [s for s in shares if query in s["title"] or query in s["description"]]
-                
+                shares = [s for s in shares if query in s["title"]
+                          or query in s["description"]]
+
             embed_per_page = 5
 
             if len(shares) > embed_per_page:
@@ -288,11 +289,11 @@ class Share(commands.Cog, name="share", description="Share your content!"):
         select_ui.callback = callback
         view.add_item(select_ui)
 
-        await context.send(view=view,ephemeral=True )
+        await context.send(view=view, ephemeral=True)
 
     @share.command(
         name="myshares",
-        description="Check your shares!",
+        description="查看你分享過的內容",
     )
     @checks.not_blacklisted()
     @app_commands.guilds(discord.Object(id=GUILD_ID))
