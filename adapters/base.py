@@ -8,7 +8,7 @@ from utils.logger import L
 FIELD_MAPPING = {
     "user": {"user_id", "email", "groups.*"},
     "group": {"group_id"},
-    "share": {"share_id", "user.*", "title", "description", "url", "tags.*"},
+    "share": {"share_id", "server_id", "user.*", "title", "description", "url", "tags.*"},
     "tag": {"tag_id"},
     "dayoff": {"dayoff_id", "time", "user.*"},
 }

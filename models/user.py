@@ -42,7 +42,7 @@ class UserToDelete:
 @dataclass
 class UserToUpdate:
     user_id: str
-    email: str = None
+    email: Optional[str] = None
     groups: Optional[List[str]] = None
 
     def __init__(
