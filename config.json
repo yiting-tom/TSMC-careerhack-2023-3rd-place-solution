@@ -1,6 +1,6 @@
 {
   "prefix": ">",
-  "token": "MTA3MjA3NTk4MDEzNjUzNDAxNg.GX4KRt.4GdI5y5yudoBuYrvcqszrszCC-LXfJTP2hZ6qE",
+  "token": "YOUR_BOT_TOKEN",
   "permissions": "8",
   "application_id": "1072075980136534016",
   "sync_commands_globally": false,
