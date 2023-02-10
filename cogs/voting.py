@@ -51,15 +51,17 @@ class Voting(commands.Cog, name="voting"):
         if context.invoked_subcommand is None:
             embed = discord.Embed(
                 description="Please specify a subcommand.\n\n**Subcommands:**\n" + \
-                "`add` `<event_name>` `[<yyyy:mm:dd hh:mm>]` - Add a vote event.\n" + \
-                "`vote` `<event_name>` `[<option1> <option2> ...]` - Make a vote to a specific event.\n" + \
-                "`remove` - Remove a vote event.\n" + \
+                "**For create/remove/modify a vote event:**\n" + \
                 "`list` - List all vote events.\n" + \
+                "`add` `<event_name>` `[<yyyy-mm-dd hh:mm>]` - Add a vote event (with end time).\n" + \
+                "`remove` - Remove a vote event.\n" + \
                 "`add_option` `<event_name>` `[<option1> <option2> ...]` - Add some options to a vote event.\n" + \
                 "`del_option` `<event_name>` `[<option1> <option2> ...]` - Delete some options from a vote event.\n" + \
-                "`set_time` `<event_name>` `<yyyy:mm:dd hh:mm>` - Set the end time of a voting event.\n" + \
+                "`set_time` `<event_name>` `<yyyy-mm-dd hh:mm>` - Set the end time of a voting event.\n" + \
                 "`max_vote` `<event_name>` `<number>` - Set the max vote each person can vote for a voting event.\n" + \
-                "`end` `<event_name>` - Get the end time of a voting event.",
+                "`end` `<event_name>` - Get the end time of a voting event.\n\n" + \
+
+                "`vote` `<event_name>` `[<option1> <option2> ...]` - Make a vote to a specific event.\n",
                 color=0xE02B2B
             )
             await context.send(embed=embed)
