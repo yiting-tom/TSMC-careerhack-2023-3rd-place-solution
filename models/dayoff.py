@@ -6,7 +6,9 @@ from models.user import User
 @dataclass
 class Dayoff:
     dayoff_id: int
+    server_id: str
     user: User
+    description: Optional[str]
     time: datetime.timestamp
     server_id: str
     discription: Optional[str]
