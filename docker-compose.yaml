@@ -16,6 +16,17 @@ services:
     networks:
       - directus
 
+  nginx:
+    container_name: nginx
+    image: nginx:latest
+    ports:
+      - 8080:80
+    networks:
+      - directus
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf.d:/etc/nginx/conf.d
+
   directus:
     container_name: directus
     image: directus/directus:latest
@@ -27,6 +38,6 @@ services:
       - cache
       - database
     env_file: .env
-
+  
 networks:
   directus:
