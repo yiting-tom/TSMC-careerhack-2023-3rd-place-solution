@@ -324,7 +324,7 @@ class Voting(commands.Cog, name="voting"):
         self.remind.start()
         self.calculate_voting_result.start()
 
-    @tasks.loop(seconds = 5.0)
+    @tasks.loop(minutes = 1.0)
     async def remind(self):
         remind_time = datetime.datetime.now()
         print(remind_time)
