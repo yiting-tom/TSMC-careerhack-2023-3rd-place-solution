@@ -155,7 +155,20 @@ async def delete_expire_event(remind_at: str) -> list:
             print(len(result))
             return [x for x in result] or []
 
-async def update_remind_time(server_id: int, vote_name: int, remind_at: str) -> list:
+async def delete_vote_user(server_id: int, user_id: str, vote_name: str) -> None:
+    """
+    This function will get all the warnings of a user.
+
+    :param user_id: The ID of the user that should be checked.
+    :param server_id: The ID of the server that should be checked.
+    :return: A list of all the warnings of the user.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute("DELETE FROM vote WHERE server_id=? AND user_id=? AND vote_name=?", (server_id, user_id, vote_name,))
+        await db.commit()
+
+
+async def update_remind_time(server_id: int, vote_name: str, remind_at: str) -> list:
     """
     This function will get all the warnings of a user.
 
@@ -182,12 +195,12 @@ async def get_remind_user(remind_at: str) -> list:
     """
     print(remind_at)
     async with aiosqlite.connect(DATABASE_PATH) as db:
-        rows = await db.execute("SELECT user_id FROM vote WHERE remind_at=?", (remind_at,))
+        rows = await db.execute("SELECT user_id, vote_name, server_id FROM vote WHERE remind_at=?", (remind_at,))
         async with rows as cursor:
             result = await cursor.fetchall()
-            return [int(x[0]) for x in result] or []
+            return [[int(x[0]), x[1], x[2]] for x in result] or []
 
-async def voting_record(vote_type: str, first_place: str, second_place: str) -> list:
+async def vote_record(vote_type: str, first_place: str, second_place: str) -> list:
     """
     This function will get all the warnings of a user.
 
