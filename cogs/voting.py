@@ -137,6 +137,7 @@ class Voting(commands.Cog, name="voting"):
         self.voting[voting_type] = dict()
         self.voting_option[voting_type] = list()
         self.voting_config[voting_type] = [min_vote, max_vote] if min_vote <= max_vote else [max_vote, min_vote]
+        self.voting_config[voting_type].append(context.channel.id)
 
         # Convert the time into a formal type.
         if time:
@@ -344,17 +345,25 @@ class Voting(commands.Cog, name="voting"):
     async def calculate_voting_result(self):
         remind_time = datetime.datetime.now()
         remind_time = f'{remind_time.year}-{str(remind_time.month).zfill(2)}-{str(remind_time.day).zfill(2)} {str(remind_time.hour).zfill(2)}:{str(remind_time.minute).zfill(2)}'
+        remove_event_list = list()
         for voting_event_name, event_config in self.voting_config.items():
             if event_config[-1] == remind_time:
+                remove_event_list.append(voting_event_name)
                 storing_record = list()
-                self.voting_config.pop(voting_event_name)
-                self.voted_id.pop(voting_event_name)
-                voting_record = self.voting.pop(voting_event_name)
+                _, _, channel_id, _ =self.voting_config[voting_event_name]
+                self.voting_option.pop(voting_event_name)
+                voting_record = self.voting.pop(voting_event_name).values()
+                voting_record = [option for personal_option in voting_record for option in personal_option]
                 voting_record = Counter(voting_record)
                 for k, _ in voting_record.most_common(2):
                     storing_record.append(k)
-                if k >= 2:
+                if len(storing_record) >= 2:
                     await vote_record(vote_type=voting_event_name, first_place=storing_record[0], second_place=storing_record[1])
+                channel = self.bot.get_channel(channel_id)
+                voting_result = [f'({k} : {v})' for k, v in voting_record.items()]
+                await channel.send(f"🥳Event {voting_event_name} is ended. The result is : {', '.join(voting_result)}")
+        for event in remove_event_list:
+            self.voting_config.pop(event)
 
 # And then we finally add the cog to the bot so that it can load, unload, reload and use it's content.
 async def setup(bot):
