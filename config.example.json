@@ -1,0 +1,10 @@
+{
+  "prefix": "PREFIX",
+  "token": "BOT_TOKEN",
+  "permissions": "PERMISSION_CODE",
+  "application_id": "APP_ID",
+  "sync_commands_globally": false,
+  "owners": [
+    99999999999999999
+  ]
+}
