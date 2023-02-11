@@ -52,6 +52,7 @@ class Chat(commands.Cog, name="chat"):
                 color=0xE02B2B
             )
             await context.send(embed=embed)
+            return
 
         # construct prompt for openai api
         prompt = context.message.content[len(context.prefix + "chat "):]
