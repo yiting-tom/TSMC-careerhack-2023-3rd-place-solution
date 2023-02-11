@@ -42,6 +42,7 @@ class Chat(commands.Cog, name="chat"):
                 color=0xE02B2B
             )
             await context.send(embed=embed)
+            return
 
         # check if user has provided a prompt
         prompt = context.message.content[len(context.prefix + "chat "):]
