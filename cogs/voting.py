@@ -361,7 +361,7 @@ class Voting(commands.Cog, name="voting"):
                     await vote_record(vote_type=voting_event_name, first_place=storing_record[0], second_place=storing_record[1])
                 channel = self.bot.get_channel(channel_id)
                 voting_result = [f'({k} : {v})' for k, v in voting_record.items()]
-                await channel.send(f"🥳Event {voting_event_name} is ended. The result is : {', '.join(voting_result)}")
+                await channel.send(f"🥳 Event {voting_event_name} is ended. The result is : {', '.join(voting_result)}")
         for event in remove_event_list:
             self.voting_config.pop(event)
 
