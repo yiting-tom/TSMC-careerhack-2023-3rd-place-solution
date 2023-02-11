@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 from helpers import checks
 
 load_dotenv()
-OPENAI_ENABLED = os.getenv("OPENAI_ENABLED")
+OPENAI_ENABLED = True if os.getenv("OPENAI_ENABLED") in ["True", "true", "1"] else False
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MAX_TOKENS = os.getenv("OPENAI_MAX_TOKENS")
 
